@@ -1,0 +1,2 @@
+# Team Rosters
+Driven through masteries.  If a mastery of a hero is 0 for a position, it implies that the current player for that position can't play that hero.  Anything above 1, the hero is added to the selectable heroes for that position.
