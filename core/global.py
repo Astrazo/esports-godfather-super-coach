@@ -62,17 +62,3 @@ def get_position_best_heroes(position: str | list[str], tier=1, verbose=False) -
 #best_heroes = get_position_best_heroes(["Top", "Mid"], verbose=True)
 
 
-
-heroes_t = set(hero_tier_list["Name"].unique().tolist())
-all_hero_names = set(all_hero_names)
-
-mismatches = []
-for hero in heroes_t:
-    if hero in all_hero_names:
-        continue
-    mismatches.append((hero))
-
-if (len(heroes_t) != len(all_hero_names)) or mismatches:
-    print("Names do not match.")
-else:
-    print("Names match.")
