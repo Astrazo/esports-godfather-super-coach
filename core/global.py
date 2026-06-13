@@ -1,5 +1,7 @@
 # Global Helper Functions
-def get_hero_best_positions(hero_name: str | list[str], tier=1, verbose=False) -> dict[str, list[dict]]:
+def get_hero_best_positions(
+    hero_name: str | list[str], tier=1, verbose=False
+) -> dict[str, list[dict]]:
     output = {}
 
     names = [hero_name] if isinstance(hero_name, str) else hero_name.copy()
@@ -10,8 +12,7 @@ def get_hero_best_positions(hero_name: str | list[str], tier=1, verbose=False) -
         target_score = max_score - (tier - 1)
 
         best_positions = hero_rows.loc[
-            hero_rows["tier_score"] == target_score,
-            ["Position", "Tier"]
+            hero_rows["tier_score"] == target_score, ["Position", "Tier"]
         ].to_dict("records")
 
         if not best_positions:
@@ -28,8 +29,11 @@ def get_hero_best_positions(hero_name: str | list[str], tier=1, verbose=False) -
 
     return output
 
+
 # Get the best heroes for a position
-def get_position_best_heroes(position: str | list[str], tier=1, verbose=False) -> dict[str, list[dict]]:
+def get_position_best_heroes(
+    position: str | list[str], tier=1, verbose=False
+) -> dict[str, list[dict]]:
     output = {}
 
     positions = [position] if isinstance(position, str) else position.copy()
@@ -40,8 +44,7 @@ def get_position_best_heroes(position: str | list[str], tier=1, verbose=False) -
         target_score = max_score - (tier - 1)
 
         best_heroes = position_rows.loc[
-            position_rows["tier_score"] == target_score,
-            ["Name", "Tier"]
+            position_rows["tier_score"] == target_score, ["Name", "Tier"]
         ].to_dict("records")
 
         if not best_heroes:
@@ -58,7 +61,6 @@ def get_position_best_heroes(position: str | list[str], tier=1, verbose=False) -
 
     return output
 
-#best_positions = get_hero_best_positions("Bart", verbose=True, tier=1)
-#best_heroes = get_position_best_heroes(["Top", "Mid"], verbose=True)
 
-
+# best_positions = get_hero_best_positions("Bart", verbose=True, tier=1)
+# best_heroes = get_position_best_heroes(["Top", "Mid"], verbose=True)

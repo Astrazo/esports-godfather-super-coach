@@ -1,14 +1,15 @@
-# Setup mastery functions.  This does not live on the graph
-def create_empty_masteries(G):
-    return {
-        hero: {
-            position: 0
-            for position in G.nodes[hero]["tiers"]
-        }
-        for hero in G.nodes
-    }
+POSITIONS = ["Top", "Jungler", "Mid", "Bot", "Support"]
 
-def set_mastery(masteries, hero: str, position: str, level: int):
+# Setup mastery functions.  This does not live on the graph
+def create_empty_masteries(G) -> dict[str, dict[str: int]]:
+    return {hero: {position: 0 for position in G.nodes[hero]["tiers"]} for hero in G.nodes} # mastery can only exist where a tier exists
+
+# A function to create a structure to house enemy signiture heroes to help with the draft
+def create_empty_signitures() -> dict[str, set]: # position -> heroes
+    return {position: set() for position in POSITIONS}
+
+# Set the masterty of a hero
+def set_mastery(masteries: dict[str, dict[str: int]], hero: str, position: str, level: int):
     if hero not in masteries:
         raise ValueError(f"Unknown hero: {hero}")
 
@@ -20,24 +21,6 @@ def set_mastery(masteries, hero: str, position: str, level: int):
 
     masteries[hero][position] = level
 
-
-# Build hero tier and master lookups
-tiers = defaultdict(dict)
-t1_masteries = create_empty_masteries(G_master)
-t2_masteries = create_empty_masteries(G_master)
-
-# Build t1 masteries  - for every position that this hero can be in, what is the mastery of the actual players?
-for _, row in hero_tier_list.iterrows():
-    tiers[row["Name"]][row["Position"]] = row["tier_score"]
-
-    set_mastery(t1_masteries, row["Name"], row["Position"], random.randint(0, 7))
-
-print(t1_masteries["Frank"])
-print(tiers["Frank"])
-
-# Build t2 masteries
-for _, row in hero_tier_list.iterrows():
-    tiers[row["Name"]][row["Position"]] = row["tier_score"]
-    set_mastery(t2_masteries, row["Name"], row["Position"], random.randint(0, 7))
-print(t1_masteries["Frank"])
-print(tiers["Frank"])
+def set_signiture(signitures: dict[str, set[str]], position: str, hero: str):
+    # TODO pass in something from global data here to ensure the hero is correct and it can be played in the specified position
+    signitures[position].add(hero)
