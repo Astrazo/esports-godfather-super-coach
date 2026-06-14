@@ -22,16 +22,17 @@ def build_draft_state():
 
 def recommend_pick(G, team: str, lane, draft_state: DraftState, data: GlobalData):
 
-    # Unpack data
-    t1_available = draft_state.t1_available
-    t1_picked = draft_state.t1_picked
-    t2_available = draft_state.t2_available
-    t2_picked = draft_state.t2_picked
+    # Determine enemy and friendly teams and unpack data
+    friendly_picked = draft_state.t1_picked if team == "t1" else draft_state.t2_picked
+    enemy_picked = draft_state.t2_picked if team == "t1" else draft_state.t1_picked
+    friendly_available = draft_state.t1_available if team == "t1" else draft_state.t2_available
+    enemy_available = draft_state.t2_available if team == "t1" else draft_state.t1_available
+
 
     # Score all candidates for the requested lane
-    candidates = t1_available[lane] if team == "t1" else t2_available[lane]
+    candidates = friendly_available[lane]
     results = {
-        hero: _score_hero(G, team, hero, lane, t1_available, t1_picked, t2_available, t2_picked, data)
+        hero: _score_hero(G, team, hero, lane, friendly_available, friendly_picked, enemy_available, enemy_picked, data)
         for hero in candidates
     }
     
@@ -41,8 +42,8 @@ def recommend_pick(G, team: str, lane, draft_state: DraftState, data: GlobalData
     
     # Check if best pick scores higher in another lane
     other_results = {
-        other_lane: _score_hero(G, team, best, other_lane, t1_available, t1_picked, t2_available, t2_picked, data)
-        for other_lane, pool in t1_available.items()
+        other_lane: _score_hero(G, team, best, other_lane, friendly_available, friendly_picked, enemy_available, enemy_picked, data)
+        for other_lane, pool in friendly_available.items()
         if other_lane != lane and best in pool
     }
 
@@ -69,8 +70,8 @@ def _score_hero(
         team: str,
         candidate,
         position, # for tier and mastery scoring
-        t1_available: set, t1_picked: set, 
-        t2_available: set, t2_picked: set,
+        friendly_available: set, friendly_picked: set, 
+        enemy_available: set, enemy_picked: set,
         data: GlobalData
     ):
     
@@ -97,28 +98,28 @@ def _score_hero(
     score = 0
     explanation = defaultdict(set)
 
-    t1_available_distinct = set().union(*t1_available.values())
-    t2_available_distinct = set().union(*t2_available.values())
+    friendly_available_distinct = set().union(*friendly_available.values())
+    enemy_available_distinct = set().union(*enemy_available.values())
     
     #1. Is there anything that counters this hero that can be picked against it?  
     # TODO for each hero that counteres this one, how good/strong is that counter?  Score reductions should be based on how strong the counter is
     # TODO for each hero that counter's this one, has been picked already?  Heroes that have been picked should carry a stronger importance
     countered_by = {v for _, v, d in G.out_edges(candidate, data=True) if d["type"] == "countered_by"}
     for hero in countered_by:
-        if hero in t2_picked:
+        if hero in enemy_picked:
             score -= w_countered_picked
             explanation["countered_by"].add(hero)
-        elif hero in t2_available_distinct:
+        elif hero in enemy_available_distinct:
             score -= w_countered_available
             explanation["countered_by_possible"].add(hero)
 
     # 2. What synergies are available for this hero
     synergies = {v for _, v, d in G.out_edges(candidate, data=True) if d["type"] == "synergy"}
     for hero in synergies:
-        if hero in t1_picked:
+        if hero in friendly_picked:
             score += w_synergy_picked
             explanation["synergy"].add(hero)
-        elif hero in t1_available_distinct:
+        elif hero in friendly_available_distinct:
             score += w_synergy_available
             explanation["synergy_possible"].add(hero)
 
@@ -126,20 +127,20 @@ def _score_hero(
     # TODO heros that we can counter with higher masteries should carry a higher weight over ones that aren't as strong
     counters = {v for _, v, d in G.out_edges(candidate, data=True) if d["type"] == "counter"}
     for hero in counters:
-        if hero in t2_picked:
+        if hero in enemy_picked:
             score += w_counter_picked
             explanation["counters"].add(hero)
-        elif hero in t2_available_distinct:
+        elif hero in enemy_available_distinct:
             score += w_counter_available
             explanation["counters_possible"].add(hero)
 
     # 4. Are there any issues with picking this hero with our current heroes?
     anti_synergy = {v for _, v, d in G.out_edges(candidate, data=True) if d["type"] == "anti_synergy"}
     for hero in anti_synergy:
-        if hero in t1_picked:
+        if hero in friendly_picked:
             score -= w_a_synergy_picked
             explanation["a_synergy"].add(hero)
-        elif hero in t1_available_distinct:
+        elif hero in friendly_available_distinct:
             score -= w_a_synergy_available
             explanation["a_synergy_possible"].add(hero)
 
