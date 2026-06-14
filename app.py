@@ -94,8 +94,18 @@ def initialise_session(graph):
     if "draft_state" not in st.session_state:
         st.session_state.draft_state = None
 
+    if "confirmed_t2_positions" not in st.session_state:
+        st.session_state.confirmed_t2_positions = set()
 
-def mastery_editor(masteries, graph, editor_key, description):
+
+def mastery_editor(
+    masteries,
+    graph,
+    editor_key,
+    description,
+    submit_label="Save masteries",
+    confirmed_positions=None,
+):
     st.caption(description)
 
     position = st.selectbox(
@@ -134,12 +144,27 @@ def mastery_editor(masteries, graph, editor_key, description):
                     key=f"{editor_key}_{position}_{hero}",
                 )
 
-        submitted = st.form_submit_button("Save masteries", type="primary")
+        submitted = st.form_submit_button(submit_label, type="primary")
 
     if submitted:
         for hero, level in pending_levels.items():
             set_mastery(masteries, hero, position, level)
-        st.success(f"Saved {position} masteries.")
+        if confirmed_positions is not None:
+            confirmed_positions.add(position)
+            st.success(f"Confirmed {position} masteries.")
+        else:
+            st.success(f"Saved {position} masteries.")
+
+
+def positions_without_known_heroes(masteries):
+    return [
+        position
+        for position in POSITIONS
+        if not any(
+            position in hero_masteries and hero_masteries[position] > 0
+            for hero_masteries in masteries.values()
+        )
+    ]
 
 
 def render_my_team(graph):
@@ -153,6 +178,7 @@ def render_my_team(graph):
         graph,
         "t1_masteries",
         "These masteries are used as T1's roster whenever a new draft starts.",
+        submit_label="Confirm position masteries",
     )
 
 
@@ -412,7 +438,10 @@ def render_active_draft(data, graph):
             st.session_state.t2_masteries,
             graph,
             "draft_t2_masteries",
-            "Add newly discovered T2 heroes, then apply the updated knowledge.",
+            "Add newly discovered T2 heroes, confirm the position, then apply "
+            "the updated knowledge.",
+            submit_label="Confirm position masteries",
+            confirmed_positions=st.session_state.confirmed_t2_positions,
         )
         if st.button("Apply T2 knowledge to draft"):
             apply_t2_knowledge(graph)
@@ -439,8 +468,27 @@ def render_draft(data, graph):
         st.session_state.t2_masteries,
         graph,
         "setup_t2_masteries",
-        "T2 heroes with mastery above zero will be available during the draft.",
+        "Set the known T2 masteries for each position, then confirm that position.",
+        submit_label="Confirm position masteries",
+        confirmed_positions=st.session_state.confirmed_t2_positions,
     )
+
+    confirmed_positions = st.session_state.confirmed_t2_positions
+    st.caption(
+        "Confirmed positions: "
+        + (
+            ", ".join(position for position in POSITIONS if position in confirmed_positions)
+            or "None"
+        )
+    )
+
+    empty_positions = positions_without_known_heroes(st.session_state.t2_masteries)
+    if empty_positions:
+        st.warning(
+            "No known T2 heroes have been entered for: "
+            f"{', '.join(empty_positions)}. You can still start the draft and "
+            "add this knowledge later."
+        )
 
     if st.button("Confirm T2 and start draft", type="primary"):
         start_draft(graph)
