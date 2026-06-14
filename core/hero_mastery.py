@@ -21,6 +21,15 @@ def set_mastery(masteries: dict[str, dict[str: int]], hero: str, position: str, 
 
     masteries[hero][position] = level
 
-def set_signiture(signitures: dict[str, set[str]], position: str, hero: str):
-    # TODO pass in something from global data here to ensure the hero is correct and it can be played in the specified position
-    signitures[position].add(hero)
+def increase_mastery(masteries: dict[str, dict[str: int]], hero: str, position: str):
+    if hero not in masteries:
+        raise ValueError(f"Unknown hero: {hero}")
+
+    if position not in masteries[hero]:
+        raise ValueError(f"{hero} cannot play {position}")
+    
+    curr_level = masteries[hero][position]
+    if curr_level >= 7:
+        raise ValueError("Mastery already at max!")
+    
+    
