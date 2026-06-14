@@ -32,4 +32,17 @@ def increase_mastery(masteries: dict[str, dict[str: int]], hero: str, position: 
     if curr_level >= 7:
         raise ValueError("Mastery already at max!")
     
+    masteries[hero][position] += 1
+
+def decrease_mastery(masteries: dict[str, dict[str: int]], hero: str, position: str):
+    if hero not in masteries:
+        raise ValueError(f"Unknown hero: {hero}")
+
+    if position not in masteries[hero]:
+        raise ValueError(f"{hero} cannot play {position}")
     
+    curr_level = masteries[hero][position]
+    if curr_level <= 0:
+        raise ValueError("Mastery already at min!")
+    
+    masteries[hero][position] -= 1

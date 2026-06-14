@@ -49,23 +49,16 @@ def build_master_graph(data: GlobalData) -> nx.MultiDiGraph:
     return G_master
 
 # Applies the hero masteries to the graph
-def confirm_hero_masteries(G: nx.MultiDiGraph, masteries: dict[str, dict[str, int]]) -> None:
-    nx.set_node_attributes(G, masteries, name="masteries")
+def confirm_hero_masteries(G: nx.MultiDiGraph, t1_masteries: dict[str, dict[str, int]], t2_masteries: dict[str, dict[str, int]]) -> None:
+    _clear_hero_masteries(G)
+    nx.set_node_attributes(G, t1_masteries, name="t1_masteries")
+    nx.set_node_attributes(G, t2_masteries, name="t2_masteries")
 
-# Applies the hero masteries to the graph
-def confirm_hero_signatures(G: nx.MultiDiGraph, signatures: dict[str, set[str]]) -> None:
-    hero_signatures: dict[str, set[str]] = {}
-
-    for position, heroes in signatures.items():
-        for hero in heroes:
-            hero_signatures.setdefault(hero, set()).add(position)
-
-    nx.set_node_attributes(G, hero_signatures, name="signatures")
-
-# Applies the hero signatures to the graph
-def clear_hero_signatures(G: nx.MultiDiGraph) -> None:
+# Ensure that the hero masteries are clean
+def _clear_hero_masteries(G: nx.MultiDiGraph) -> None:
     for _, attributes in G.nodes(data=True):
-        attributes.pop("signatures", None)
+        attributes.pop("t1_masteries", None)
+        attributes.pop("t2_masteries", None)
 
 # Clears hero signitures from the graph
 

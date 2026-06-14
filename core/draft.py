@@ -1,5 +1,7 @@
 from collections import defaultdict
 from dataclasses import dataclass
+from core.data import GlobalData
+import warnings
 
 @dataclass
 class DraftState:
@@ -11,18 +13,25 @@ class DraftState:
 
 def build_draft_state():
     return DraftState(
-        t1_available=set(),
-        t1_picked=set(),
-        t2_available=set(),
-        t2_picked=set(),
+        t1_available={},
+        t1_picked={},
+        t2_available={},
+        t2_picked={},
         banned=set()
     )
 
-def recommend_pick(G, lane, t1_available, t1_picked, t2_available, t2_picked):
+def recommend_pick(G, team: str, lane, draft_state: DraftState, data: GlobalData):
+
+    # Unpack data
+    t1_available = draft_state.t1_available
+    t1_picked = draft_state.t1_picked
+    t2_available = draft_state.t2_available
+    t2_picked = draft_state.t2_picked
+
     # Score all candidates for the requested lane
-    candidates = t1_available[lane]
+    candidates = t1_available[lane] if team == "t1" else t2_available[lane]
     results = {
-        hero: _score_hero(G, hero, lane, t1_available, t1_picked, t2_available, t2_picked)
+        hero: _score_hero(G, team, hero, lane, t1_available, t1_picked, t2_available, t2_picked, data)
         for hero in candidates
     }
     
@@ -32,7 +41,7 @@ def recommend_pick(G, lane, t1_available, t1_picked, t2_available, t2_picked):
     
     # Check if best pick scores higher in another lane
     other_results = {
-        other_lane: _score_hero(G, best, other_lane, t1_available, t1_picked, t2_available, t2_picked)
+        other_lane: _score_hero(G, team, best, other_lane, t1_available, t1_picked, t2_available, t2_picked, data)
         for other_lane, pool in t1_available.items()
         if other_lane != lane and best in pool
     }
@@ -57,10 +66,12 @@ def recommend_pick(G, lane, t1_available, t1_picked, t2_available, t2_picked):
 
 def _score_hero(
         G, 
+        team: str,
         candidate,
         position, # for tier and mastery scoring
         t1_available: set, t1_picked: set, 
-        t2_available: set, t2_picked: set
+        t2_available: set, t2_picked: set,
+        data: GlobalData
     ):
     
     # Team Comp Weights
@@ -134,32 +145,37 @@ def _score_hero(
 
     # 5 - Add weight for tier
     score += G.nodes[candidate]["tiers"][position] * w_tier
-    explanation["position_tier"].add(tier_map_rev[G.nodes[candidate]["tiers"][position]])
+    explanation["position_tier"].add(data.tier_map_rev[G.nodes[candidate]["tiers"][position]])
 
     # 6 - Add weight for mastery
-    score += G.nodes[candidate]["masteries"][position] * w_mastery
-    explanation["position_mastery"].add(G.nodes[candidate]["masteries"][position])
+    masteries_text = "t1_masteries" if team == "t1" else "t2_masteries"
+    score += G.nodes[candidate][masteries_text][position] * w_mastery
+    explanation["position_mastery"].add(G.nodes[candidate][masteries_text][position])
 
     return score, explanation
 
 
 # Hero set manipulation functions
 def pick_hero(
-        G, t_picked: dict[str, set[str]], hero: str,
-        t1_available: dict[str, set[str]],
-        t2_available: dict[str, set[str]]
+        G, hero: str, team: str, draft_state: DraftState
     ):
+
+    # Unpack data
+    t1_available = draft_state.t1_available
+    t2_available = draft_state.t2_available
+    t_picked = draft_state.t1_picked if team == "t1" else draft_state.t2_picked
 
     # This hero is no longer available
     for pool in t1_available.values():
         pool.discard(hero)
     for pool in t2_available.values():
         pool.discard(hero)
-    
+
     # Set positions this new hero could play
+    masteries_text = "t1_masteries" if team == "t1" else "t2_masteries"
     t_picked[hero] = {
         position
-        for position, mastery in G.nodes[hero]["masteries"].items()
+        for position, mastery in G.nodes[hero][masteries_text].items()
         if mastery > 0
     }
 
@@ -185,27 +201,34 @@ def pick_hero(
                 changed = True
 
             if not possible_positions:
-                raise ValueError(f"{hero} has no valid remaining positions")
+                warnings.warn(
+                    f"It seems {hero} has no valid remaining positions based on the "
+                    "availabilities provided. This may be okay if you did not provide "
+                    "all of T2's availabilities.",
+                    UserWarning,
+                    stacklevel=2,
+                )
 
-    return t_picked
+def ban_hero(hero: str, draft_state: DraftState):
 
-def ban_hero(t_banned, hero, t1_available, t2_available):
+    t1_available = draft_state.t1_available
+    t2_available = draft_state.t2_available
+
     for pool in t1_available.values():
         pool.discard(hero)
     for pool in t2_available.values():
         pool.discard(hero)
-    t_banned.add(hero)
-    return t_banned
+    draft_state.banned.add(hero)
 
-def see_current_draft(t_picked: set):
-    return t_picked
+def see_current_draft(team: str, draft_state: DraftState):
+    return draft_state.t1_picked if team == "t1" else draft_state.t2_picked
 
-def see_current_banned(t_banned: set):
-    return t_banned
+def see_current_banned(draft_state: DraftState):
+    return draft_state.banned
 
 
 # If mastery for hero + position is 0, then that player cannot play that hero at all
-def build_position_availability(masteries):
+def build_position_availability(masteries) -> dict[str, set[str]]:
     available = defaultdict(set)
 
     for hero, position_masteries in masteries.items():
