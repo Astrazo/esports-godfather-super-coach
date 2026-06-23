@@ -1,0 +1,9 @@
+# Summary
+Stat-stick Fighter with no real strengths or weaknesses.
+
+# Analysis
+Babe is a Fighter who exists exclusively to be a stat stick; he has no real unique qualities other than getting a lot of stats. His passive similarly provides stats - he gets his first item for 20% of the usual price. This allows him to get a chunky power boost early on in the game, though it does of course become entirely irrelevant in the late game when everyone is sitting on full builds.
+
+Besides his cheap first item, Babe's main distinguishing feature is Gift Bundle, which stacks up Happy Happy stacks (giving stats) while it sits in hand. Notably this provides armour as well as AP and health, giving Babe a lot more staying power than you'd expect from a Fighter. Since you're getting plenty of survivability from your Happy Happy stacks you can generally itemise Babe with whatever items will give him the most damage - an approach which his Hybrid damage type assists with. You can also turn him into a fairly effective damage sponge, but with no innate effects or additional Presence he won't perform particularly well in this role.
+
+Babe's lack of unique effects leaves him a fairly reliable, if uninspired, pick. He'll rarely excel, but he also won't get demolished - a safe blind pick, but not a power pick. You'll usually want to put him in top lane - he has enough stats to survive being isolated, and his effects are global so he can work from anywhere. The only reason to run him in mid is if you're in a meta with early objective fights where mid lane is involved, in which case you can use his early item completion to try to leverage a free objective.
