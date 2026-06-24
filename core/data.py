@@ -1,4 +1,5 @@
 from collections import defaultdict
+import csv
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -11,8 +12,10 @@ class GlobalData:
     tier_map: dict[str, int]  # in case of logging or ad-hoc conversions
     tier_map_rev: dict[int, str]  # in case of logging or ad-hoc conversions
     hero_relationships: pd.DataFrame  # for global helpers
-    hero_tiers: dict[str, dict[str, int]]  # for building master graph e.g. {Frank: {top: 5, mid: 4}, Peter: {support: 5}
+    # For building master graph e.g. {Frank: {top: 5, mid: 4}, Peter: {support: 5}
+    hero_tiers: dict[str, dict[str, int]]
     tag_hero_map: dict[str, list[str]]  # for importing hero names for tags
+    hero_mastery_choices: dict[list[str]]  # listing all optimal mastery choices
 
 
 class InvalidDataError(Exception):
@@ -20,6 +23,107 @@ class InvalidDataError(Exception):
 
 
 DATA_DIRECTORY = Path(__file__).parent.parent / "data"
+HERO_INFO_DIRECTORY = DATA_DIRECTORY / "hero_info"
+ROLE_ITEMISATION_DIRECTORY = DATA_DIRECTORY / "role_itemisation"
+GLOSSARY_FILE = DATA_DIRECTORY / "glossary.csv"
+ITEM_BUILDS = DATA_DIRECTORY / "item_builds.md"
+
+ROLE_ITEMISATION_ALIASES = {
+    "tank": "pure_tank",
+    "pure tank": "pure_tank",
+    "full tank": "pure_tank",
+    "tank one damage": "tank_one_damage_item",
+    "tank one damage item": "tank_one_damage_item",
+    "fighter": "bruiser",
+    "gladiator": "bruiser",
+    "marksman": "adc",
+    "bot": "adc",
+    "bot laner": "adc",
+    "multi hitter": "multi_hitter",
+    "multi-hitter": "multi_hitter",
+    "multi attacker": "multi_hitter",
+    "multi-attacker": "multi_hitter",
+    "aoe": "aoe",
+    "area of effect": "aoe",
+    "one slap chap": "one_slap_chap",
+    "buffer": "buffer",
+    "support": "buffer",
+    "seat warmer": "seat_warmer",
+    "special case": "special_case",
+}
+
+
+def read_hero_info(hero_name: str) -> str:
+    """Return the markdown notes for a hero."""
+    hero_info_path = HERO_INFO_DIRECTORY / _hero_name_to_info_filename(hero_name)
+
+    if not hero_info_path.exists():
+        return f"No hero info found for '{hero_name}'. Ask the user to clarify the hero name."
+
+    return hero_info_path.read_text(encoding="utf-8")
+
+
+def read_role_itemisation(role: str) -> str:
+    """Return the markdown notes for a role's itemisation."""
+    itemisation_path = ROLE_ITEMISATION_DIRECTORY / _role_to_itemisation_filename(role)
+
+    if not itemisation_path.exists():
+        return f"No itemisation info found for '{role}'. Ask the user to clarify the role."
+
+    return itemisation_path.read_text(encoding="utf-8")
+
+
+def read_glossary_definition(term: str) -> str:
+    """Return the definition for a game term."""
+    glossary = _load_glossary()
+    normalised_term = term.strip().lower()
+
+    for glossary_term, definition in glossary.items():
+        if glossary_term.lower() == normalised_term:
+            return f"The definition for {glossary_term} is: {definition}"
+
+    return f"No glossary definition found for '{term}'.  Ask the user to clarify the term if you do not know it from general MOBA or card game knowledge."
+
+
+def _hero_name_to_info_filename(hero_name: str) -> str:
+    """Convert a display hero name into the matching hero info markdown filename."""
+    return f"{_text_to_slug(hero_name)}.md"
+
+
+def _role_to_itemisation_filename(role: str) -> str:
+    """Convert a role or role alias into the matching itemisation markdown filename."""
+    normalised_role = role.strip().lower()
+    slug = ROLE_ITEMISATION_ALIASES.get(normalised_role, _text_to_slug(normalised_role))
+    return f"{slug}.md"
+
+
+def _text_to_slug(text: str) -> str:
+    """Convert display text into the snake_case filenames used by markdown data."""
+    filename_parts = []
+    previous_was_separator = False
+
+    for character in text.strip().lower():
+        if character.isalnum():
+            filename_parts.append(character)
+            previous_was_separator = False
+            continue
+
+        if not previous_was_separator:
+            filename_parts.append("_")
+            previous_was_separator = True
+
+    return "".join(filename_parts).strip("_")
+
+
+def _load_glossary() -> dict[str, str]:
+    """Load glossary terms from the user-editable CSV file."""
+    with GLOSSARY_FILE.open(newline="", encoding="utf-8-sig") as file:
+        rows = csv.DictReader(file)
+        return {
+            row["term"].strip(): row["definition"].strip()
+            for row in rows
+            if row["term"].strip()
+        }
 
 
 def build_global_data() -> GlobalData:
@@ -59,6 +163,11 @@ def build_global_data() -> GlobalData:
         for _, row in tiers.iterrows():
             hero_tiers[row["Name"]][row["Position"]] = row["Tier_Score"]
 
+        # TODO Load in hero mastery choices
+        HERO_MASTERY_CHOICES = {
+            
+        }
+
         # Build static class for globals
         return GlobalData(
             hero_names=hero_names,
@@ -67,6 +176,7 @@ def build_global_data() -> GlobalData:
             hero_relationships=relationships,
             hero_tiers=hero_tiers,
             tag_hero_map=tag_hero_map,
+            hero_mastery_choices=HERO_MASTERY_CHOICES
         )
     else:
         raise InvalidDataError(f"Hero names in files do not match: {invalid_heros}")
