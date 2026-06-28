@@ -1,9 +1,11 @@
+import copy
 from collections import defaultdict
 
 import networkx as nx
 import plotly.graph_objects as go
 import streamlit as st
 
+from core.agent import agent
 from core.data import build_global_data
 from core.draft import (
     ban_hero,
@@ -14,6 +16,12 @@ from core.draft import (
 )
 from core.graph import build_master_graph, confirm_hero_masteries
 from core.hero_mastery import POSITIONS, create_empty_masteries, set_mastery
+from core.persistence import (
+    load_coach_messages,
+    load_t1_masteries,
+    save_coach_messages,
+    save_t1_masteries,
+)
 
 RELATIONSHIP_COLORS = {
     "synergy": "#33c481",
@@ -76,7 +84,7 @@ def enable_page_scroll_over_inputs():
         unsafe_allow_javascript=True,
     )
 
-
+# Survives refreshes.  Does not survive turning the streamlit server off.
 @st.cache_resource
 def load_game():
     data = build_global_data()
@@ -84,9 +92,15 @@ def load_game():
     return data, graph
 
 
-def initialise_session(graph):
+def initialise_session(default_graph):
+    if "graph" not in st.session_state:
+        st.session_state.graph = copy.deepcopy(default_graph)
+
+    graph = st.session_state.graph
+
     if "t1_masteries" not in st.session_state:
-        st.session_state.t1_masteries = create_empty_masteries(graph)
+        empty_masteries = create_empty_masteries(graph)
+        st.session_state.t1_masteries = load_t1_masteries(empty_masteries)
 
     if "t2_masteries" not in st.session_state:
         st.session_state.t2_masteries = create_empty_masteries(graph)
@@ -96,6 +110,54 @@ def initialise_session(graph):
 
     if "confirmed_t2_positions" not in st.session_state:
         st.session_state.confirmed_t2_positions = set()
+
+    if "coach_messages" not in st.session_state:
+        st.session_state.coach_messages = load_coach_messages()
+
+    confirm_hero_masteries(
+        graph,
+        st.session_state.t1_masteries,
+        st.session_state.t2_masteries,
+    )
+
+
+def render_coach():
+    st.header("Coach")
+    st.caption("Ask about heroes, builds, attributes, game terms, or team compositions.")
+
+    if st.button("Clear conversation", disabled=not st.session_state.coach_messages):
+        st.session_state.coach_messages = []
+        save_coach_messages(st.session_state.coach_messages)
+        st.rerun()
+
+    for message in st.session_state.coach_messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    prompt = st.chat_input("Ask your coach about the heroes...")
+    if not prompt:
+        return
+
+    st.session_state.coach_messages.append({"role": "user", "content": prompt})
+    save_coach_messages(st.session_state.coach_messages)
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    with st.chat_message("assistant"):
+        with st.spinner("Thinking..."):
+            try:
+                result = agent.invoke({"messages": st.session_state.coach_messages})
+                response = result["messages"][-1].content
+            except Exception as error:
+                st.error(f"The coach could not respond: {error}")
+                return
+
+        st.markdown(response)
+
+    st.session_state.coach_messages.append(
+        {"role": "assistant", "content": response}
+    )
+    save_coach_messages(st.session_state.coach_messages)
 
 
 def mastery_editor(
@@ -127,7 +189,7 @@ def mastery_editor(
 
     if not heroes:
         st.info("No heroes match this position and filter.")
-        return
+        return False
 
     with st.form(f"{editor_key}_form"):
         columns = st.columns(3)
@@ -155,16 +217,7 @@ def mastery_editor(
         else:
             st.success(f"Saved {position} masteries.")
 
-
-def positions_without_known_heroes(masteries):
-    return [
-        position
-        for position in POSITIONS
-        if not any(
-            position in hero_masteries and hero_masteries[position] > 0
-            for hero_masteries in masteries.values()
-        )
-    ]
+    return submitted
 
 
 def render_my_team(graph):
@@ -173,13 +226,19 @@ def render_my_team(graph):
         "Manage the heroes your team can play. A mastery of zero makes the hero "
         "unavailable for that position."
     )
-    mastery_editor(
+    saved = mastery_editor(
         st.session_state.t1_masteries,
         graph,
         "t1_masteries",
         "These masteries are used as T1's roster whenever a new draft starts.",
-        submit_label="Confirm position masteries",
     )
+    if saved:
+        confirm_hero_masteries(
+            graph,
+            st.session_state.t1_masteries,
+            st.session_state.t2_masteries,
+        )
+        save_t1_masteries(st.session_state.t1_masteries)
 
 
 def graph_figure(graph, focus_hero, relationship_types):
@@ -456,6 +515,8 @@ def render_active_draft(data, graph):
 
     if st.button("End draft"):
         st.session_state.draft_state = None
+        st.session_state.t2_masteries = create_empty_masteries(graph)
+        st.session_state.confirmed_t2_positions = set()
         st.rerun()
 
 
@@ -474,7 +535,8 @@ def render_draft(data, graph):
         st.session_state.t2_masteries,
         graph,
         "setup_t2_masteries",
-        "Set the known T2 masteries for each position, then confirm that position.",
+        "Set the known T2 masteries for each position, then confirm that position. "
+        "Unconfirmed changes are not added to T2's masteries.",
         submit_label="Confirm position masteries",
         confirmed_positions=st.session_state.confirmed_t2_positions,
     )
@@ -487,14 +549,6 @@ def render_draft(data, graph):
             or "None"
         )
     )
-
-    empty_positions = positions_without_known_heroes(st.session_state.t2_masteries)
-    if empty_positions:
-        st.warning(
-            "No known T2 heroes have been entered for: "
-            f"{', '.join(empty_positions)}. You can still start the draft and "
-            "add this knowledge later."
-        )
 
     if st.button("Confirm T2 and start draft", type="primary"):
         start_draft(graph)
@@ -509,16 +563,19 @@ def main():
     )
     enable_page_scroll_over_inputs()
 
-    data, graph = load_game()
-    initialise_session(graph)
+    data, default_graph = load_game()
+    initialise_session(default_graph)
+    graph = st.session_state.graph
 
     st.sidebar.title("Lazy Esports Godfather")
     page = st.sidebar.radio(
         "Navigate",
-        ["My Team", "Master Graph", "Start Draft"],
+        ["Coach", "My Team", "Master Graph", "Start Draft"],
     )
 
-    if page == "My Team":
+    if page == "Coach":
+        render_coach()
+    elif page == "My Team":
         render_my_team(graph)
     elif page == "Master Graph":
         render_graph_explorer(data, graph)
