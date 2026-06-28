@@ -2,6 +2,14 @@
 A vanilla vector for a very expensive bodyguard.
 
 # Hero Analysis
+## Attributes
+### Hero Class
+- Support
+### Attack Type
+- Ranged
+### Damage Type
+- Physical
+
 ## Hero Description
 Qin Hu himself is an entirely generic, if passable, hero. His main draw is his Warden - a fairly tanky summon which, uniquely, joins any fight anywhere on the map, regardless of Qin Hu's position (assuming he's alive, anyway). This is both a blessing and a curse - it lets him provide support constantly with no prior setup needed, including defensively, but also makes it much more likely that the Warden will fall over sooner or later. The big problem with the Warden is that, useful though it is, reviving it requires a hideously painful 6 SP card to be both found and played - and until you do, Qin Hu himself is pretty useless.
 
@@ -35,8 +43,33 @@ Each allied hero attacks an enemy within 1 hex. If a hero has no valid targets, 
 ### Card Analysis
 Generally a bit too expensive for what you're really using it for (which is typically for a specific hero to get an attack off); the cost reduction from mastery is necessary to make it a good play. This card leans into the idea that you can use the Warden in place of a real tank, since the more damage-oriented heroes you've got the more value you'll get from it. Note that if you've got ways to bring your team together around a single enemy you can use this to dogpile them, which is pretty funny (if unreliable without good field hit).
 
+# Variants
+None.
+
 # Item Build
 Mage, despite not having access to magical items. All you really want on Qin Hu is AP, the more of it the better; more AP means a beefier Warden, and again, if you didn't care about the Warden you'd have brought someone better. Defences should be redundant with your summon around, while crit is inefficient.
 
 # Funnelling
 Probably not. Can make decent use of bonus AP to continue to bulk up the Warden, but that's about it; Qin Hu's cards are ones you play when you have to, not because you want to.
+
+# Interactions
+Warden: Since it's basically the only reason Qin Hu exists, anything which reduces the Warden's usefulness makes Qin Hu a worse pick. Notably, Lubos can make it semi-irrelevant (unless the target can win the damage race in a Duel, the Warden accomplishes nothing), while Foso facerolls it like she does every other summon.
+
+Weakest Link: Tactical Target/Victory Rush likes high AP, low health, easily targeted enemies - squishy melee heroes like Lan are ideal. If your opponent picks a squishy solo lane melee early for some reason, Qin Hu can form the start of a nasty comp; victimise that solo lane and you can give yourself a very easy target to pick off early into teamfights for a nice AoE AP buff.
+
+Stop Resisting: Attack Order is usually pretty mediocre, but if you can gather a lot of heroes in one place it suddenly becomes potent. Felicity's Return to Embrace can pull a lot of heroes together ready for a big fight - at which point Attack Order suddenly delivers an awful lot of relevant damage. If you can isolate a single target to be beaten on, you can also pretend you're a typical US police force arresting a suspect.
+v3.1 | Qin Hu
+v3.1 Updates: Complete 180 on my recommended Mastery choices, I now believe the best choice is to make the Warden as beefy as possible because if you're not relying on it, you'd have picked someone else (and because it's so painfully expensive to resummon). Also fixed my referring to him as a mage in the text - that's how you should think when itemising him, but he's actually physical (I'm not actually sure if that was always the case or not). Further tweaked things here and there to add clarifications.
+
+Item build: Mage, despite not having access to magical items. All you really want on Qin Hu is AP, the more of it the better; more AP means a beefier Warden, and again, if you didn't care about the Warden you'd have brought someone better. Defences should be redundant with your summon around, while crit is inefficient.
+
+Reserve Tactics: Nothing much. Solo Show can give you both the cards and the SP to bring back the Warden if it falls over, but that's an awfully big investment to make.
+
+Funnelling: Probably not. Can make decent use of bonus AP to continue to bulk up the Warden, but that's about it; Qin Hu's cards are ones you play when you have to, not because you want to.
+
+Rejected gags:
+Qin Who? - Most people who play this game. Because, y'know, he's unpopular. Get it? You get it.
+
+You'd think losing an eye would prompt him to revise his 'only the lower face' helmet policy, but I guess he's stubborn. Maybe he just wants to show off those killer eyebrows.
+v3.1 | Chen Fengcheng
+He heard there was a ninja around masquerading as a pirate, and so arrived to teach her a lesson - by killing everyone, stealing their stuff, and ignoring her entirely.

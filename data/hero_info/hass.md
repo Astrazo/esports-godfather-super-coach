@@ -2,6 +2,14 @@
 Solid stat-stick hero who directly counters a lot of supports
 
 # Hero Analysis
+## Attributes
+### Hero Class
+- Fighter
+### Attack Type
+- Melee
+### Damage Type
+- Physical
+
 ## Hero Description
 Hass is a Fighter generally taken as a counterpick thanks to his unique effects. Whenever he strikes a target in a fight, he steals all of the shields and temporary buffs they have; to facilitate this, he always targets the enemy with the most buffs where applicable.
 
@@ -33,8 +41,28 @@ Target an enemy hero within 2 hexes; attack them. This attack always hits, deals
 ### Card Analysis
 For obvious reasons, this card is primarily used to give Hass even more of a stat lead over the enemy team, simply generating bonus gold; however, it is phenomenally expensive even taking the gold generation into account. For that reason you should avoid playing it before you've managed to play Shadow Imitator (as the bonus AP helps to generate more gold). Note that as gold generated is based on damage dealt, targeting enemies with low armour (particularly Frank) will have the best results.
 
+# Variants
+
+## Variant 1
+
+### Gained
+- Increases Hass' damage by 12% per buff.
+
+### Removed
+- Nothing
+
+### Changed
+- Number of buffs stolen on hit reduced from all of the target's buffs to one buff.
+
+### Variant Description
+A slightly awkward change; Hass' damage tends to increase with this Variant, but it makes his main selling point - utterly neutering buff heroes - much less reliable. Increases Hass' pick priority into heroes with repeatedly-applied buffs which aren't consumed (e.g. Aurelio), but it was already basically max anyway, so...
+On the other hand, unless your opponent REALLY screws the pooch in the draft (which isn't common for the AI nowadays) you're probably not getting any more than one buff per attack anyway, so in most cases this is probably just a straight buff.
+
 # Item Build
 Generally you'll want to build Hass as a generic bruiser to leverage his absorbed stats. The main exception to this is when you've got him hard-countering one of the above heroes - in this case you can build in the expectation that you'll get that particular buff. For instance, if Hass is countering Fernan, you can build him with a much heavier damage focus since he'll be picking up free armour and lifesteal.
 
 # Funnelling
 Not worth it. Hass' cards are too expensive and niche to be worth repeatedly searching out, and his functionality comes from his innate effects. He's also going to have a stat advantage either way. Pick someone else.
+
+# Interactions
+Shields/buffs - As noted throughout the entry above.

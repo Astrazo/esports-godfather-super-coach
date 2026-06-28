@@ -347,7 +347,7 @@ def render_team_picks(title, picked):
 def render_recommendation(data, graph, draft_state, team, position):
     st.subheader("Recommendation")
     try:
-        best, score, explanation, flag, all_results = recommend_pick(
+        recommendation = recommend_pick(
             graph,
             team,
             position,
@@ -358,23 +358,29 @@ def render_recommendation(data, graph, draft_state, team, position):
         st.info(f"No known {team.upper()} heroes are available for {position}.")
         return
 
+    best = recommendation["recommended_hero"]
+    score = recommendation["score"]
+    explanation = recommendation["explanation"]
+    better_position = recommendation["better_position"]
+
     st.metric("Best pick", best, f"{score:.2f} score")
 
-    if flag:
-        st.warning(flag)
+    if better_position:
+        alternative_lane = better_position["lane"]
+        alternative_score = better_position["score"]
+        st.warning(
+            f"If you can, consider {best} for {alternative_lane} instead "
+            f"(scores {alternative_score:.2f} in {alternative_lane} "
+            f"vs {score:.2f} in {position})"
+        )
 
     for reason, heroes in explanation.items():
-        values = ", ".join(str(hero) for hero in sorted(heroes, key=str))
+        values = ", ".join(str(hero) for hero in heroes)
         st.write(f"**{reason.replace('_', ' ').title()}:** {values}")
 
-    ranked_results = sorted(
-        all_results.items(),
-        key=lambda item: item[1][0],
-        reverse=True,
-    )
     with st.expander("All candidate scores"):
-        for hero, result in ranked_results:
-            st.write(f"{hero}: {result[0]:.2f}")
+        for candidate in recommendation["candidates"]:
+            st.write(f"{candidate['hero']}: {candidate['score']:.2f}")
 
 
 def render_hero_buttons(graph, draft_state, action, team, position, search):

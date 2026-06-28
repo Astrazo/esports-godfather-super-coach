@@ -2,6 +2,14 @@
 Greedy top-lane Fighter who underperforms if he's not prioritised and overperforms if he is.
 
 # Hero Analysis
+## Attributes
+### Hero Class
+- Mage
+### Attack Type
+- Melee
+### Damage Type
+- Magical
+
 ## Hero Description
 It's easy to write Cubey off. After all, it looks weird, and it doesn't really do a lot if you just pick it without a setup. Indeed, what commentary I've seen on Cubey all seems to think he sucks. However, what those people don't seem to have realised is that if you prioritise supporting it, Cubey can become one of the meanest Fighters around.
 
@@ -35,8 +43,47 @@ Take 35% max health as damage. Gain 1 AP per 25 health lost, then attack all ene
 ### Card Analysis
 This, on the other hand, is how Cubey takes over the game once its health is stacked up. For context, this equates to 14 AP per 1000 current health, doubled once you hit 6 Evolution stacks. This may not sound like a lot, but when you focus on buffing Cubey's health and healing it up, it can stack up very quickly. The attack built into this card is something you'll usually forget even exists - it's definitely not why you play the card - then you play two copies in the late game and your lane opponent explodes. Always funny.
 
+# Variants
+
+## Variant 1
+
+### Gained
+- At the beginning of each round on the field, increase Cubey's max health by 3 x Evolution stacks
+- Gain Active Body stacks on entering a fight, granting 10 armour per stack. Lose 1 stack when being hit.
+
+### Removed
+- Gain Drain the Life stacks on entering a fight, granting 4% lifesteal and 8 armour per stack. Gain 1 stack when hitting and lose 1 stack when being hit.
+
+### Changed
+- Nothing
+
+### Variant Description
+Generally a substantial buff to Cubey's playstyle because it mitigates a major issue it has - you want to spam Differentiation-b early, but doing so has less impact on its max health than it does later into the game when its health pool is larger. Gaining max health continually over the course of the game softens the blow. Active Body is generally weaker than Drain the Life due to not being able to regain stacks, but honestly this is something of an afterthought - your goal is to make Cubey into a 3k+ AP monster, not to lifesteal-tank things.
+
+## Variant 2
+
+### Gained
+- Base armour is set to 0.
+- Each stack of Evolution also grants 6 armour. Once Evolution reaches 6 stacks, the armour gain is doubled (retroactively).
+
+### Removed
+- Nothing
+
+### Changed
+- Nothing
+
+### Variant Description
+On paper this looks like a buff - once you hit 6 stacks you're looking at 72 armour, which is an increase over the normal base. In practice, however, it makes Cubey much more dependent on healing effects on the field - having no armour early results in it taking more damage, which in turn leaves it lower on health and therefore reduces the impact of the Differentiations. If you can align your healing properly, though, this is a big fat buff.
+
 # Item Build
 Cubey can build most things, honestly. What he really doesn't need is flat AP - believe me, he gets more than enough of that. Armour items can help to protect a midgame Cubey, early health items allow for better ramping, and he has a big enough health pool from stacking that he can happily take drawback items like Blue Monolith without the slightest concern. Mechanical Arm is notable due to giving him massive amounts of armour when stacked as well as a little Presence to waste some attacks.
 
 # Funnelling
 Yes. Yes. A thousand times yes. Do not play Cubey unless you're funnelling him.
+
+# Interactions
+Search effects - Cubey wants to play Cubey's cards. It's that simple. Any search effects you can give it will boost its effectiveness as the game goes on. As you might expect, Blocker (as the premier searcher in the game) is your best choice - particularly because Cubey only has cards it wants to play, so even Interference Field will probably help find one (as well as healing you up to boot). Reinhardt is also notable as while Supersonic is weaker than Signal Detection, late game it can move you into position to explode other lanes as well.
+
+Health boosts - All of Cubey's stat-boosting cards operate based on Cubey's health. This means that max health boosts feed into the entire operation, bolstering its stats even more. Even in the absence of max health boosts, simple healing can help Cubey to stay at its max health so as to get the most value out of its cards. Finally, in the absence of either of these, note that the Differentiation cards are coded as damage rather than expenditure, so you can actually shield the damage taken while still getting all of the benefits.
+
+Digo - Worth noting as probably the best bot lane pick in a Cubey team. The entire point of your pick/ban is to make Cubey an unkillable monstrosity - and if Cubey is unkillable, so is Digo. You'll be taking Blocker anyway, who can function okay in a 1v2 gank, and Digo doesn't have many cards so you'll have more chance of getting Cubey's. Of course, it's all much of a muchness when your Cubey has 3k+ AP, but optimisation matters I guess.

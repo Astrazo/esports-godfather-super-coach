@@ -2,6 +2,14 @@
 Fairly vanilla tank with a focus on objectives.
 
 # Hero Analysis
+## Attributes
+### Hero Class
+- Fighter
+### Attack Type
+- Melee
+### Damage Type
+- Physical
+
 ## Hero Description
 Miki is a Tank (badged by the game as a Fighter) whose main distinguishing feature is that he always shows up for objective fights no matter where he is on the map (unless dead, of course). Furthermore, when showing up for an objective fight he gives his team a shield equal to 10/17.5% of his max health, and generates a powerful card afterwards if he wins.
 
@@ -33,8 +41,29 @@ Miki moves up to 2 hexes, then gives a shield of 10% of his max health to all al
 ### Card Analysis
 Relatively cheap for a movement card, but just as low impact as movement cards usually are. Your best use for this is to throw shields around to assist the other lanes, particularly if you can sync up recalls with bot lane.
 
+# Variants
+
+## Variant 1
+
+### Gained
+- Nothing
+
+### Removed
+- Nothing
+
+### Changed
+- Teamwide benefit granted at the start of objective fights and the Final Fight changed from a shield equal to 10% of Miki's maximum health to AP equal to 7 times Miki's level.
+
+### Variant Description
+Changes one low impact effect to another. In most practical terms this is a buff - 7 x level AP is often quite substantial, especially for tanks - but really you're not going to notice either of them.
+
 # Item Build
 Pure tank. Again, the game badges him as a Fighter and I have no idea why - he has absolutely no way of using bonus AP and the few buffs he provides are either stat-agnostic or determined by his health. Make him a beefy boi and let him soak for the people who can actually deal damage.
 
 # Funnelling
 As a last resort, sure. He has both automatic entitlement to objective fights and a very long range initiation, so he can make the bonus stats matter a lot sooner than most. He doesn't really do much with them, though, so you'll only really target him if you pick an early buffer and then the pick/ban shifts to make your original strategy unfeasible.
+
+# Interactions
+Buffs - Although lacking in carry potential, if you don't have a clear funnel target Miki can be a decent choice simply because of his omnipresence. Between his passive and his long distance engages, Miki will be a part of the vast majority of fights; you can therefore argue that you'll get the most efficiency out of throwing buffs to him rather than other heroes. Having said that, your best option is still usually a carry.
+
+Niels - A notable minor synergy, Niels is probably the hero who appreciates shields more than anyone else in the game. Miki having an extremely cheap shield in Chick Running, as well as applying them automatically to the entire team in objective fights, can help to ensure Niels has a shield in most engagements without having to spend too much SP.

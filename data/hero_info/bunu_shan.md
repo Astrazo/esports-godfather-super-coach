@@ -2,6 +2,14 @@
 Very late-game carry, terrible early and incredible late.
 
 # Hero Analysis
+## Attributes
+### Hero Class
+- Mage
+### Attack Type
+- Ranged
+### Damage Type
+- Magical
+
 ## Hero Description
 The premier late-game ADC of the game, Bunu Shan is exceptionally powerful... eventually. They start the game with 70 stacks of the Serenity debuff, which doesn't actually do anything in itself other than track progress. They lose one stack of Serenity per round, plus an additional one each time an ally hits with an attack on the field - note that this does not include hits in fights, nor does it include harassment. Eventually, once all 70 stacks are gone, Bunu Shan Awakens, gaining two effects - firstly, their attack in fights becomes a triple attack, with the three hits dealing 50%, 70% and 90% of their AP respectively (or 60%, 80% and 100% with masteries); and additionally, they gain a bonus 5 AP per round (7 with masteries). They also replace their underwhelming Serenity Training cards with more powerful ones.
 
@@ -16,29 +24,73 @@ There aren't really any hard counters to Bunu Shan, which is what makes them suc
 As a final note, according to the ever-reliable Google Translate, Bunu Shan translates to 'Don't delete it' in simplified Chinese.
 
 # Cards
-## Card 1
+## Serenity Training
 ### Description
 Target an enemy within 1 hex of Bunu Shan and Attack them. Removed after Awakening.
 
 ### Card Analysis
 A fairly unimpressive card, functionally identical to the Poke Tactic card. Despite being extremely underwhelming, you'll still probably want to play it most of the time simply to work towards Awakening.
 
-## Card 2
+## Outburst
 ### Description
 Target an enemy within 1 hex of Bunu Shan and Attack them for 50% damage; if it hits, repeat this effect with 50% more damage, with a maximum of 3 hits. Added to the draw pile after Awakening.
 
 ### Card Analysis
 Can deal up to 300% AP damage - which, when backed by Bunu Shan's Awakened AP, is a lot. Still unlikely to secure solo kills if only because you need to succeed on three hit rolls to get there, but can be useful to soften targets up before important fights.
 
-## Card 3
+## Wrath
 ### Description
 Give an allied hero the Wrath buff, giving them 30% of Bunu Shan's AP for 5 rounds. Added to draw pile after Awakening.
 
 ### Card Analysis
 The real power card of Bunu Shan's deck, this can easily add 300+ AP to a hero and (unlike many similar effects) it isn't removed at the end of fights or after hitting. It can, of course, be applied to Bunu Shan themselves to really stack up the damage; alternatively, apply it to a high crit or multi-attacking hero for best results. Beware using this against Hass unless you like him getting huge damage for some reason. Maybe you're a masochist, I don't know.
 
+# Variants
+
+## Variant 1
+
+### Gained
+- Nothing
+
+### Removed
+- Nothing
+
+### Changed
+- Serenity's maximum stacks increased from 70 to 90.
+- AP gained per round while Awakened increased from 5 to 10.
+- Damage dealt by Bunu Shan's three Awakened attacks increased from 50%/70%/90% to 60%/80%/100%.
+
+### Variant Description
+A very slight downgrade because if you're smart (or more accurately, if you're listening to me) you'll be taking the bonus damage per hit masteries; adding flat 5%s to the numbers means less when they're higher already. The increase in stack count does mean it's much harder to Awaken Bunu Shan without a comp with a heavy focus on field attacks; realistically, though, you weren't drafting them outside of a field attack comp anyway, so no huge change.
+
+## Variant 2
+
+### Gained
+- Nothing
+
+### Removed
+- Nothing
+
+### Changed
+- Serenity's maximum stacks reduced from 70 to 55.
+- AP gained per round while Awakened reduced from 5 to 3.
+
+### Variant Description
+A very slight upgrade here, on the other hand. You get less AP per round once Awakened, yes, but your Awakened attacks lose none of their scaling and a potential 15 rounds of +3 AP means you'll only be losing a little by the late game. A small price to pay for having an actual hero in lane in the midgame rather than a glorified summon.
+
 # Item Build
 Mage/Multi-Hitter. There isn't a huge amount of overlap between the two archetypes, so mostly you'll find yourself itemising Mage items; a GA effect is useful if there's one around since losing Bunu Shan means losing half your team's damage. Avoid Dissonance though, as you only get the first attack of your combo.
 
 # Funnelling
 Tutoring is probably a pass; Bunu Shan's cards aren't bad, but they aren't flexible enough to spam. Bonus health can be appreciated since they have a mage's stat growth rather than an ADC's and so are slightly more chunky already, but the AP is probably unnecessary given how much you get from Awakening.
+
+# Interactions
+Beverly - Notable for providing heavy buffs which are amplified by the multi-attack, and also for having the five-stack Renovation hits.
+
+Zealot - Assimilation is a 1-cost card giving three hits, which is pretty fantastic; Zealot is also a great target for Wrath late game if you don't want to put all your eggs in the Bunu Shan basket.
+
+Kamaitachi - Has multiple attacking cards, and also attacks via a passive which can add stacks even while you're doing other things. Another good target for Wrath late game, particularly as the triple attack gives three stacks of his passive.
+
+Felyn - An absurd number of attacking cards. If you need the achievement for Awakening Bunu Shan quickly, run them mid, run Felyn-Blocker bot lane, and you'll usually see an Awakening by round 40.
+
+Enidi - Similarly to Felyn, simply brings a huge number of attack cards to the table.

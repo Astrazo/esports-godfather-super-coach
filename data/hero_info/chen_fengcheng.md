@@ -2,6 +2,14 @@
 Bruiser that shows up with a big hit and then does little else.
 
 # Hero Analysis
+## Attributes
+### Hero Class
+- Fighter
+### Attack Type
+- Melee
+### Damage Type
+- Physical
+
 ## Hero Description
 Chen Fengcheng (hereafter referred to as Chen because I'm lazy) has two mechanics in his toolbox, both of which revolve around Ship Coins. He generates 20 Ship Coins per turn on the field, plus an extra 4, 3 and 3 from masteries (total of 30 for those of you that are REALLY bad at maths).
 
@@ -42,8 +50,31 @@ All living heroes (friend or foe) gain gold; the amount is equal to 50% of Chen'
 ### Card Analysis
 The much less impressive payoff for your Ship Coins. Since the gold is divided between both teams, you're specifically looking to play this when you have more living heroes than the opposing team does; however, if only one enemy is dead (i.e. a 5-4 split) you're only getting a tiny relative gold gain (1/18th of Chen's Ship Coins is the delta). It's a benefit, sure, but a tiny one. There are two ways to use this, therefore - you can either avoid playing it at all unless the stars align and you get a great fight result, or (if you're smart) you can tailor your item builds towards more expensive items and play this whenever you have it. If both teams get extra gold, the ones with the more expensive items benefit more. Alternatively, just hit tab in every DP and see if you'll hit an item spike by playing this. Note that while it's not made very clear, these are one-time-use - you get one for each equipment you activate. That's arguably a good thing, because it protects your deck from this mediocrity.
 
+# Variants
+None.
+
 # Item Build
 One slap chap. He gets his one big attack off (you hope), then down to lacklustre bruiser stats for the rest of the fight. You can itemise him with maximised AP - that will give him extra damage for Reward and Punish and also the damage to follow up in his solo fights - but expect him to severely underperform in teamfights if you do.
 
 # Funnelling
 Tutoring is decent, since you'll want to Burn, Kill and Loot whenever you have a good opening to justify the prep cost. Stat gains aren't, really, since there's no AP scaling on the special attack - you'll get some benefit through increased Reward and Punish damage.
+
+# Interactions
+Damn you, Anna - Turns out when literally all your power is in the first round, you get screwed if the enemy team have a lot of armour that round. Arguably a hard counter.
+
+Not Charming - You'd think Divide the Spoils would pair nicely with Gillis' Charm to generate bonus gold. Unfortunately, it really isn't - the actual gold gain is minimal, so paying an extra 4 SP to replicate it really doesn't do much. If you're running an Acedia already, on the other hand, it's a little extra on the side I suppose.
+
+Centaurs are bad sailors - Unfortunately Reinhardt is not the great synergy you'd hope for with Chen thanks to the foibles of action order. Chen will smash his ship to splinters for the eighth time that game, then Reinhardt will shred the enemies' armour afterwards. They really need to have a chat with each other.
+v3.1 | Chen Fengcheng (cont.)
+v3.1 Updates: Added. Obviously.
+
+Item build: One slap chap. He gets his one big attack off (you hope), then down to lacklustre bruiser stats for the rest of the fight. You can itemise him with maximised AP - that will give him extra damage for Reward and Punish and also the damage to follow up in his solo fights - but expect him to severely underperform in teamfights if you do.
+
+Reserve Tactics: None in particular. There's an argument for cards like Teleporting for Support, or movement cards on your jungler, to try to manipulate good Burn, Kill and Loot initiations.
+
+Funnelling: Tutoring is decent, since you'll want to Burn, Kill and Loot whenever you have a good opening to justify the prep cost. Stat gains aren't, really, since there's no AP scaling on the special attack - you'll get some benefit through increased Reward and Punish damage.
+
+Rejected gags:
+"Aye, I know me ship has cannons - but that would be hard to animate. Now, ramming speed!" - Chen Fengcheng
+v3.1 | Fernan
+They told me I could go anywhere. Do anything. SO I DID. - Fernan

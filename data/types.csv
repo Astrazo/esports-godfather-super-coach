@@ -1,0 +1,13 @@
+category,name,description
+hero_class,Gladiator,A balanced class.
+hero_class,Fighter,A balanced class with slightly stronger defensive attributes and slightly weaker offensive attributes.
+hero_class,Mage,A balanced class with slightly stronger offensive attributes and slightly weaker defensive attributes.
+hero_class,Tank,A class with strong defensive attributes and weak offensive attributes.
+hero_class,Assassin,A class with strong offensive attributes and weak defensive attributes.
+hero_class,Support,A balanced class with slightly stronger offensive attributes and slightly weaker defensive attributes.
+hero_class,Marksman,A class with strong offensive attributes and weak defensive attributes.
+attack_type,Melee,Base presence is 4. Gain additional 10 armour than ranged hero of the same class.
+attack_type,Ranged,Base presence is 2.
+damage_type,Physical,"Deals physical damage, and can use physical and general equipment."
+damage_type,Magical,"Deals magical damage, and can use magical and general equipment."
+damage_type,Hybrid,"Deals 50% magical damage and 50% physical damage, and can use any equipment."

@@ -2,6 +2,14 @@
 Versatile support primarily used for gold generation.
 
 # Hero Analysis
+## Attributes
+### Hero Class
+- Support
+### Attack Type
+- Melee
+### Damage Type
+- Magical
+
 ## Hero Description
 Acedia is a low maintenance support. She doesn't give as many benefits to your team as someone like, say, Dylan will; nor does she partner up with a carry to dominate a game like someone like Blocker will. What she instead does is provide some decent assistance to your team while requiring absolutely no SP to be spent playing her cards, allowing you to get value from her while still dumping your SP into heroes like Kid, Lan and Wolfgang - who are powerful but require a fair amount of SP investment to use effectively.
 
@@ -31,8 +39,31 @@ Remove 5 stacks of Sleepiness (or as many as you have, if you have less). The ne
 ### Card Analysis
 This card effectively costs gold to play (since you're spending Sleepiness, which you'd otherwise be using to give gold via Alarm Clock). That said, it's still a pretty solid card, even if you're not getting the full value out of it (which you often won't be). Its best use is in heavily discounting an initiation card so that you can get a sizeable amount of setup done before starting a fight; this approach is aided by masteries, which make this card give you 1 SP so long as you're removing the full 5 stacks.
 
+# Variants
+
+## Variant 1
+
+### Gained
+- Nothing
+
+### Removed
+- Nothing
+
+### Changed
+- Sleepiness stack generation changed from occurring each time you play another hero's card to occurring at the beginning of even-numbered rounds.
+
+### Variant Description
+Hypothetically could be an upgrade if you spend all your deployment phases playing just a small number of expensive cards (such as initiation cards); in practice though you'll almost always play a lot more cards than that, especially if you're not an idiot and so have drafted a lot of cost reduction Match Traits and Tactics cards. Avoid.
+
 # Item Build
 Support. Acedia has no effects which interact with items in any way, and she's got a support's low gold income, so throw her whatever cheap and useful items you can. Default to tank items if there aren't enough good support ones, since she can at least take a punch for your carry if all else fails.
 
 # Funnelling
 Nope. She's a support so she's not the target for your bonus stats, and her cards are specifically designed to not be spammed.
+
+# Interactions
+Digo - Acedia has all kinds of weird interactions with Digo. For more information, check Digo's entry.
+
+Gillis - While Acedia shuts down other first round effects like Reinhardt and Lubos, Gillis is the most important one to keep in mind because she entirely negates Gillis' entire kit. Not only does she remove her from the first round, during which she's all but immune to damage, but this also prevents Gillis from gaining AP in the second round as well. It's also worth highlighting that if the Gillis is on your team you should hold Alarm Clock until you can first play Charm so that you get double the gold for your team.
+
+First round vs first attack - It's important to differentiate between hero effects which proc on the first round, as opposed to ones which proc off the first attack. Gillis' effect, for example, works in the first round and so Acedia will negate it entirely. By contrast, heroes like Felyn, Hakuna, Lan etc. all work off their first attack - so Acedia won't negate their ability, just postpone it by a round.

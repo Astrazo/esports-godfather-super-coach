@@ -2,6 +2,14 @@
 Fairly generic tank with a very good initiation.
 
 # Hero Analysis
+## Attributes
+### Hero Class
+- Tank
+### Attack Type
+- Melee
+### Damage Type
+- Physical
+
 ## Hero Description
 Hakuna matata is a wonderful phrase ...Let me start again.
 
@@ -35,8 +43,42 @@ Target an enemy hero within 1 hex of Hakuna and move both him and the target 2 h
 ### Card Analysis
 Rather awkward to use due to the range of the movement, but is probably your best bet for lining up a good Dominant Onslaught. The tower damage is very low, so avoid using it for that purpose - if you want tower damage you're better off setting up a good initiation to generate Plunders. Bear in mind you can't play this if the movement would take you off the map - it doesn't just stop when you hit a wall.
 
+# Variants
+
+## Variant 1
+
+### Gained
+- Nothing
+
+### Removed
+- Nothing
+
+### Changed
+- Special-attack bonus damage increased from 16% to 26% of the target's health.
+- Splash damage to other enemies reduced from one half to one quarter of the attack's damage.
+
+### Variant Description
+Hit the one target harder and the others a little weaker. Works out to an overall buff - the team-wide damage goes from AP + 8% target hp to AP + 6.5% target hp, which isn't too much of a loss, while the target gets chunked significantly harder. This is most noticeable in skirmishes, where Hakuna becomes much more effective at securing kills. On the other hand, he's not really the kind of hero you draft for a skirmish game.
+
+## Variant 2
+
+### Gained
+- Special attack ignores armour.
+
+### Removed
+- Nothing
+
+### Changed
+- Splash damage to other enemies reduced from one half to one quarter of the attack's damage.
+
+### Variant Description
+Honestly this barely makes a difference. It does push you towards targeting tanks, but you were usually going to do that anyway, so who really cares?
+
 # Item Build
 One Slap Chap. Hakuna is basically the definition of the archetype - so you might want an item built to work off his single hit, but aside from that he's a tank through and through.
 
 # Funnelling
 No. His cards are only really there for initiation, and that's all he's good for too. Even if you want to funnel a tank, pick one that actually uses the stats.
+
+# Interactions
+Nothing particularly major; has some minor synergy with Reinhardt due to his round 1 armour shred allowing for maximising Hakuna's special attack damage, and generally slots nicely into an Alpha Strike comp.

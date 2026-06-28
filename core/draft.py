@@ -20,7 +20,13 @@ def build_draft_state():
         banned=set()
     )
 
-def recommend_pick(G, team: str, lane, draft_state: DraftState, data: GlobalData):
+def recommend_pick(
+    G,
+    team: str,
+    lane: str,
+    draft_state: DraftState,
+    data: GlobalData,
+) -> dict:
 
     # Determine enemy and friendly teams and unpack data
     friendly_picked = draft_state.t1_picked if team == "t1" else draft_state.t2_picked
@@ -47,7 +53,7 @@ def recommend_pick(G, team: str, lane, draft_state: DraftState, data: GlobalData
         if other_lane != lane and best in pool
     }
 
-    flag = None
+    better_position = None
 
     if other_results :
         best_alt_lane = max(
@@ -57,12 +63,37 @@ def recommend_pick(G, team: str, lane, draft_state: DraftState, data: GlobalData
         alt_score, _ = other_results[best_alt_lane]
 
         if alt_score > best_score:
-            flag = (
-                f"If you can, consider {best} for {best_alt_lane} instead "
-                f"(scores {alt_score:.2f} in {best_alt_lane} vs {best_score:.2f} in {lane})"
-            )
-    
-    return best, best_score, best_explanation, flag, results
+            better_position = {
+                "lane": best_alt_lane,
+                "score": alt_score,
+            }
+
+    candidates = []
+    for hero, (score, explanation) in results.items():
+        candidates.append(
+            {
+                "hero": hero,
+                "score": score,
+                "explanation": {
+                    reason: sorted(values, key=str)
+                    for reason, values in explanation.items()
+                },
+            }
+        )
+
+    candidates.sort(key=lambda candidate: candidate["score"], reverse=True)
+
+    return {
+        "recommended_hero": best,
+        "requested_lane": lane,
+        "score": best_score,
+        "explanation": {
+            reason: sorted(values, key=str)
+            for reason, values in best_explanation.items()
+        },
+        "better_position": better_position,
+        "candidates": candidates,
+    }
 
 
 def _score_hero(

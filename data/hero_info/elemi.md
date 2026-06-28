@@ -2,6 +2,14 @@
 Solid all-rounder ADC with no notable weaknesses.
 
 # Hero Analysis
+## Attributes
+### Hero Class
+- Marksman
+### Attack Type
+- Ranged
+### Damage Type
+- Physical
+
 ## Hero Description
 Elemi is a good, strong ADC with no real weaknesses. She fires twice with every attack, the first dealing the standard 100% AP (pre-mitigation, of course) and the second dealing variable damage depending on mastery choices and whether she targets the same target or a different one. As an absolute minimum, though, she'll be dealing 40% damage with the second shot - which is still a solid 140% multiplier on her damage output at the very least.
 
@@ -12,29 +20,64 @@ Notably, also, her cards orient her towards wanting Field Hit - the better her h
 Regarding Mastery choices - essentially, your decision is between reliability and potential. Taking the option for better damage on the same target is better for overall damage output provided she successfully targets the same enemy twice; the other option is obviously better if she's not hitting the same target, but more to the point, means she operates better in teamfights where she's particularly unlikely to get a double tap. Personally I favour the option for extra damage when hitting the same target, as it makes her an extremely good skirmisher and helps secure kills in bot lane ganks, but both options are viable depending on playstyle.
 
 # Cards
-## Card 1
+## Overclocking
 ### Description
 Unplayable; modifies her other cards if it's in hand. If drawn during a Deployment Phase, searches her other cards.
 
 ### Card Analysis
 Given it can't be played, there isn't much analysis to be done on this card - if it's in hand, that's good. That's about all you can say. A good target to be searched for with any effect that lets you pick cards, since it then draws Elemi's other hero cards.
 
-## Card 2
+## Crossfire
 ### Description
 Attack an enemy hero in the same hex. If it hits, deal 50% damage, push once, and repeat. Deals 1 bonus damage to turrets.
 
 ### Card Analysis
 Something of a win-more card; if you have high Field Hit this is a great lane bully and push card, but to get that Field Hit you probably need to outskill your opponent (or have a Match Trait to boost it). Its damage output is pretty low for its cost, so you'll mostly want to use this if you're trying to push for tower damage. Overclocking adds 2 more tower damage, making this very good for blowing up structures if you can get into position before playing it.
 
-## Card 3
+## Rapid Shooting
 ### Description
 Attack a random enemy or turret within 2 hexes. If you hit, repeat but with 10% reduced accuracy. Deals 1 bonus damage to turrets, and has a maximum of four hits.
 
 ### Card Analysis
 Great damage, but again, only if you've got a lot of Field Hit. If you don't, 3 SP is a lot to be spending for 1-2 hits with no additional effects; it does have some potential tower damage on it at least. Overclocking halves the accuracy penalty on each successive hit and raises the maximum to five, giving you the best odds for straight up mercing someone.
 
+# Variants
+
+## Variant 1
+
+### Gained
+- Nothing
+
+### Removed
+- Nothing
+
+### Changed
+- Elemi's second-attack damage against the same target increased from 80% to 120%.
+- Elemi's second-attack damage against a different target reduced from 40% to 20%.
+
+### Variant Description
+Not a particularly big change; this mostly benefits Elemi in skirmishes and into single tank compositions. If you decided on the same-target boost from masteries this can add up to a lot of single target punch. Also encourages you to bring effects which can isolate targets pre-fight, such as Acedia and Tiger Boy (hah, yeah right).
+
+## Variant 2
+
+### Gained
+- Elemi's attacks shred 7 armour each for the rest of the fight.
+
+### Removed
+- Nothing
+
+### Changed
+- Elemi's second-attack damage against the same target reduced from 80% to 60%.
+- Elemi's second-attack damage against a different target reduced from 40% to 30%.
+
+### Variant Description
+A very, very nice upgrade - you lose some power for smaller and shorter fights, but gain it in larger and/or longer fights. On squishier targets in particular, the armour shred can very quickly make up for the loss of second attack damage even in small skirmishes; in longer fights, meanwhile, Elemi adds an element (ha) of inevitability to her otherwise solid-but-unremarkable performance. Pushes Elemi up to top tier alongside Felyn, BaJie and Foso.
+
 # Item Build
 ADC. No reason to change (two attacks per round aren't worth building multi-hitter items on your ADC, you want that role doing heavy damage).
 
 # Funnelling
 As much as any other ADC. Some limited additional value in tutoring since she can turn one searched card into three.
+
+# Interactions
+Multi-hits - Like anyone else with multiple attacks in fights, has both synergy with, and counter potential from, heroes that interact on a per-attack basis - Kamaitachi, Merisi etc. etc.

@@ -2,6 +2,14 @@
 Lane bullying hybrid Fighter with an automatic execute.
 
 # Hero Analysis
+## Attributes
+### Hero Class
+- Fighter
+### Attack Type
+- Melee
+### Damage Type
+- Hybrid
+
 ## Hero Description
 Justice is an aggressive laning Fighter whose signature ability is to execute enemy heroes below 25% health. To do this, she gains stacks of Sword of Justice whenever she hits an enemy hero with a card or an in-fight attack; these stacks don't do anything themselves (other than give 5 armour each at max mastery). Once Justice has 4 stacks, the next time an enemy hero drops below 25% health in a fight she'll expend all four stacks to instantly kill them.
 
@@ -31,8 +39,28 @@ Kill an enemy hero or turret with less than 25% max health. Costs 4 stacks of Sw
 ### Card Analysis
 For some reason only spawned in your deck once Justice has hit level 6, despite her being able to execute enemies in fights from level 1. The vast majority of the time your only target for this card will be turrets, as enemies tend to recall when they drop below ~40% health; it is possible to use this as a follow-up after throwing some damage cards around, of course, but it's very expensive to fit into a combo like that. Generally you shouldn't bother with this card as its price is prohibitive, but occasionally you'll find a use for it.
 
+# Variants
+
+## Variant 1
+
+### Gained
+- Nothing
+
+### Removed
+- Nothing
+
+### Changed
+- Sword of Justice execute trigger threshold reduced from 25% to 18% health.
+- Execute targeting changed from killing only the triggering unit to killing all enemy units below 25% health.
+
+### Variant Description
+In almost all circumstances this is a nerf. In theory it can allow Justice to instakill two or more targets; in practice this requires enemies to fall into a very narrow band of health between 18% and 25% without slipping any lower. This simply isn't reliable, and so in practical terms usually means you're just working with a lower execute threshold. You can try to play for it by drafting AoE (Foso, Niels, Enidi), but you'll still rarely see a multi-execute.
+
 # Item Build
 Generally Bruiser, but since she's hybrid you can flex in any other items she might want. Most of the Magical items are a bit too glass cannon for her, but a few like Golden Ticket or Height Detector can be worth a look.
 
 # Funnelling
 Can be worth tutoring for the sake of picking up a lot of anti-tower cards if she's pushed up. Don't funnel bonus stats onto her though - not that she can't use them (as well as any other bruiser at least), but Justice usually wants to sit in a more aggressive pushing comp which closes the game out quickly, while stat-buffers usually want the game to run late. If you do wind up drafting her as a safe blind pick to start off a buff comp, you'll have a better target in mind.
+
+# Interactions
+Mihawk - Justice has no particular interactions with any heroes, but it's worth highlighting her partnership with Mihawk in teamfights. Mihawk's main strength is dealing damage to high %health targets; the lower their health gets, the less damage he deals. Justice being able to clean up after him allows both to function efficiently, and while this partnership isn't incredible, it's still worth noting as a decent synergistic set of picks.

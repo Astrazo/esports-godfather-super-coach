@@ -2,6 +2,14 @@
 Strong defensive Fighter with mild offensive and support capability.
 
 # Hero Analysis
+## Attributes
+### Hero Class
+- Fighter
+### Attack Type
+- Melee
+### Damage Type
+- Physical
+
 ## Hero Description
 Reinhardt is a tanky Fighter who brings a bit of everything. He has good defensive base stats along with being melee, which lets him function fairly well as a tank; he also has an effect which causes him to make a single special attack on entering a fight, striking all enemy melee (or all units, with masteries) and reducing their armour for one round, which makes him good in smaller skirmishes. On top of that, he has some good utility cards, and a passive which causes him to deal 30/50% damage to a ranged unit when he attacks a melee.
 
@@ -12,29 +20,66 @@ While Reinhardt has no actual counters as such, he's best picked into teams with
 Note that he can function just as well in top lane and jungle; personally I feel top is the better choice because the full-map travel distance can give you a secondary initiation method, but find I just can't justify the hero pool slot on my top laner. It's much easier to find room for him in your jungle pool. Regardless, either can work, particularly as cards are generally global.
 
 # Cards
-## Card 1
+## Radiant Lance
 ### Description
 Target an enemy hero (global) and attack them. This attack always hits and heals all allies within 1 hex for 250% of the damage dealt.
 
 ### Card Analysis
 Another good reason to build at least some damage, this card is pretty solid as a pre-initiation tool to heal up your team and poke down an enemy. While not usually a priority card, between global range and always hitting it's a good way of dumping excess SP. I usually find myself playing this just to snipe a low health target after a fight.
 
-## Card 2
+## Cavalry Charge
 ### Description
 Choose an enemy hero in a straight line from Reinhardt; initiate a standard 3 round fight (1 round participation range). Reinhardt's special attack in this fight deals 10% more damage for each hex Reinhardt moved to reach his target.
 
 ### Card Analysis
 A little underwhelming, primarily because it's very awkward to get a good line-up on an enemy hero and the payoff is just a standard 3/1 initiation. That said, it's very cheap for an initiation card; the bonus damage is rarely enough to be relevant.
 
-## Card 3
+## Supersonic
 ### Description
 Choose an allied hero. They move 2 hexes, then search one of their cards into hand.
 
 ### Card Analysis
 A decent utility card, but very expensive for what it does (mostly because the game seems to hugely overvalue movement). Its best use is often to line Reinhardt up for a charge (he can target himself and with the mastery to draw two cards instead of one, will always draw Cavalry Charge). As a search card it's decent but not incredible due to the cost; bear in mind that the target has to move at least one hex, which can cause some awkwardness for heroes like Felyn.
 
+# Variants
+
+## Variant 1
+
+### Gained
+- Nothing
+
+### Removed
+- Nothing
+
+### Changed
+- Armour shredded by Reinhardt's special attack for one round reduced from 25 to 10.
+- Damage dealt to a random ranged enemy when Reinhardt hits a melee enemy increased from 30% to 35%.
+
+### Variant Description
+Barely changes anything. The loss of some armour shred for the first round might in theory weaken his skirmish game, but in practice the extension of duration makes up for it within 3 rounds. Between the extended duration and the slight boost to his pierce damage, his objective game does get a lot stronger though.
+
+## Variant 2
+
+### Gained
+- Nothing
+
+### Removed
+- Nothing
+
+### Changed
+- Reinhardt's special-attack armour interaction changed from shredding 25 armour for one round to ignoring 45 armour.
+- Damage dealt to a random ranged enemy when Reinhardt hits a melee enemy increased from 30% to 40%.
+
+### Variant Description
+A slight nerf. These changes push you towards building damage on Reinhardt, which is precisely what you don't want to do - he's not going to deal damage worth a poop either way, so you're better off bulking him up. Meh.
+
 # Item Build
 One slap chap. Like Hakuna, he shows up, blows his load and then hangs around not doing a lot. Itemising for his pierce damage is a mistake, since he's never going to do much damage on his attacks either way and it hurts when he decides to just hit a ranged unit anyway.
 
 # Funnelling
 No. He's there to search cards for you, not get them searched, and he doesn't use bonus stats well enough.
+
+# Interactions
+Alpha Strike - Reinhardt's special attack shreds a solid amount of armour in round 1. This is beneficial for heroes who dump a lot of damage in round 1 - Felyn and Lan most notably, but also Lubos, Ada etc. With the addition of Chen Fengcheng there's a lot more opportunity to build a comp around bit first round damage, though note that unfortunately Chen's attack happens before Reinhardt's so you don't get the armour shred on it.
+
+Funnelling - Supersonic's search functionality combines nicely with heroes who want to be funnelled. Felyn and Cubey are the two obvious examples.

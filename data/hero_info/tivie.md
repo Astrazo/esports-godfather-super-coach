@@ -2,6 +2,14 @@
 Support who does nothing but heal allies.
 
 # Hero Analysis
+## Attributes
+### Hero Class
+- Support
+### Attack Type
+- Ranged
+### Damage Type
+- Magical
+
 ## Hero Description
 Soraka Tivie is the game's obligatory healer. She scales quite poorly - gaining just 60% of the standard AP and heal from levels and gold - and her attacks in fights heal the lowest health ally instead of targeting enemies. On the bright side, she gets a 10/30/60/100 bonus (levels 1/6/11/16) to her heals, so she's just squishy instead of useless; her heals also dispel all debuffs, which can be situationally useful.
 
@@ -12,29 +20,52 @@ Due to her poor scaling, Tivie isn't generally a good pick. While she can help t
 Incidentally, Tivie (like Palulu) can't crit with her heals, and several item effects which would cause damage or debuffs won't function with her. Make sure you check her item build to focus on AP and health, since other stats aren't useful to her.
 
 # Cards
-## Card 1
+## Heaven Rainfall
 ### Description
 Spawned in the deck at levels 6/11/16 and removed when played. Reduce the cost of all cards in your hand by 1 until the end of this Deployment Phase.
 
 ### Card Analysis
 A fantastic card, which is why you only get to play it a few times during the game. Discounts are always valuable, and as a 1 cost card you can get value out of this with just a couple of card plays even if you don't want to spend your full SP allocation; obviously it's most efficient to play all your cards, though. Note that unlike the comparable Quick Decision Tactics card, this card doesn't vanish if you don't use it, so you can hold it for the right moment.
 
-## Card 2
+## Melody of Revive
 ### Description
 Respawn all of the dead monsters in jungle hexes your team controls. When these monsters are killed by your heroes they grant 75% additional gold.
 
 ### Card Analysis
 Quite expensive (the cost reduction mastery is important), this functions as a delayed gold bonus to your team (obviously usually your jungler, though other heroes can grab camps via cards). Due to being a multiplier on monster farming this card's value can vary immensely depending on your heroes' farming efficiency, pathing, how many monsters are currently dead and how much jungle your team controls; you'll have to gauge whether this is worth playing on a case-by-case basis. On the bright side, the bonus gold only applies to your team, so counter-jungling won't screw you too much harder than it normally would.
 
-## Card 3
+## Rain of Life
 ### Description
 Target an allied hero to heal them for 200% of Tivie's AP and remove debuffs. This card then gains a token (shared across both copies). Once you have 4/3 tokens, this card targets all allied heroes.
 
 ### Card Analysis
 Generally not all that useful. Unlike a lot of heals this doesn't have any overheal functionality, so it's mostly used to patch up allies to keep them in lane - reducing damage your towers are taking, but not really much else. Can be situationally useful to remove problematic debuffs before fights or to throw an emergency heal if you're worried about a gank.
 
+# Variants
+
+## Variant 1
+
+### Gained
+- At the start of objective teamfights Tivie restores 30% max health to all allies (whether she participates or not).
+
+### Removed
+- At the end of fights, Tivie restores 30% max health to all surviving allies (whether she participates or not).
+
+### Changed
+- Nothing
+
+### Variant Description
+Something of a sidegrade - you lose Tivie's map-wide skirmish support (which admittedly is mostly just useful for pushing down towers), but in exchange you have to pay less attention to setting up for objective teamfights. On the other hand, setting up for objective teamfights should be second nature once you've been playing the game for a while, so this probably winds up being a nerf in most cases.
+
 # Item Build
 Support. Build AP if you run out of support items, as unlike gold/levels she still gets 100% AP scaling.
 
 # Funnelling
 Definitely not. Some minor value to searching Heaven Rainfall when needed.
+
+# Interactions
+Cubey - Cubey spends health to play its cards, and the effectiveness of those cards is predicated on its current health. Rain of Life can help to top it off to ensure you get as much value as possible out of those cards (although frankly you're still better off drafting a search function instead).
+
+Wolfgang - Wolfgang continually scales up in fights to become a beast; this is especially notable for his armour gain. As a result, healing Wolfgang mid-fight has a disproportionately large effect, since thanks to his stolen armour each hitpoint will go further.
+
+Jungle clearance - While Melody of Revive is a little underwhelming in a vacuum, it can be quite effective in conjunction with heroes who can quickly AoE clear their own jungle. Depending on circumstances you can either use Melody of Revive and then the clear to give them a nice influx of gold, or alternatively if your camps are mostly intact you can quickly clear them and then revive them immediately. Most notable with Zealot, whose Code: Devour has a built-in gold multiplier already.

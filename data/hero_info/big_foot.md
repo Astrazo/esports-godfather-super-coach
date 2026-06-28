@@ -2,6 +2,14 @@
 Bulky tank that shreds the AP of the enemy team.
 
 # Hero Analysis
+## Attributes
+### Hero Class
+- Tank
+### Attack Type
+- Melee
+### Damage Type
+- Physical
+
 ## Hero Description
 Big Foot is a tank who, unfortunately, doesn't really feel like he does much. The hero is entirely reliant on his debuff, Frozen Stiff, which applies a stack to an enemy hero whenever they attack in a fight; each stack reduces AP by 6% to a maximum of -30% at 5 stacks. Once fully stacked, they then take 6% of their current health as damage with each action instead.
 
@@ -31,8 +39,44 @@ Choose an enemy hero. They, and all enemies within 1 hex, receive two stacks of 
 ### Card Analysis
 Absurdly over-costed, 4 SP for two stacks of Big Foot's passive is ridiculous. Yes, it applies the AP debuff on the field, lowering potential harass and attack card damage, but 4 SP for 12% AP reduction is never going to be worth it. The only time you'd ever want to play this card is if you're running a designated stall comp, and even then you'll be very likely to have better things to spend your SP on.
 
+# Variants
+
+## Variant 1
+
+### Gained
+- Nothing
+
+### Removed
+- Nothing
+
+### Changed
+- AP reduction per Frozen Stiff stack reduced from 5% to 3%.
+- Frozen Stiff damage at maximum stacks changed from 6% of current health to 6% of maximum health after each action.
+
+### Variant Description
+Shifts power out of the AP debuff and into damage. In most circumstances this is a minor nerf to Big Foot - you're picking him to shred AP, after all, not deal damage. It can make him a pretty vicious counter to big tanks though, and improves his synergy with Crank by making the periodic damage more lethal.
+
+## Variant 2
+
+### Gained
+- Frozen Stiff reduces armour by 4 per stack, to a maximum of 32.
+
+### Removed
+- Frozen Stiff reduces AP by 5% per stack; at max stacks, instead deals 6% current health as damage.
+
+### Changed
+- Nothing
+
+### Variant Description
+A major shift in Big Foot's pick priority; instead of being a defensive tank, he now becomes a vicious offensive tank. While the debuff takes a while to stack up, it will wind up being incredibly impactful as a fight wears on - 32 armour is most, if not all, of a squishy's defences. This also makes Big Foot a very potent counter to high action heroes, particularly when combined with Raven. Lastly, the higher stack count coupled with damage amplification makes Blizzard a slightly more attractive play (though still hideously, painfully overpriced).
+
 # Item Build
 Standard Pure Tank. Heart Mirror is a good item since the AP shred will lower attackers' damage, letting more of it be blocked. Terror Anthology could see some niche use, but won't actually proc until the attacker is fully stacked.
 
 # Funnelling
 Definitely not. No good can come of this.
+
+# Interactions
+Stall comps - While Big Foot doesn't have much in the way of direct synergy, the combination of AP shred and big tank has value for team comps specifically designed to out-last. Heroes with inevitability or damage-over-time, such as Crank, Wolfgang, Peiniang Zhu etc. can get some value out of him.
+
+Multi-attackers - A very soft counter, Frozen Stiff is applied whenever an enemy takes an action. This means that heroes which attack repeatedly will gain stacks quickly and start taking damage - Felyn, for instance, will immediately stack to full and take some chip damage right at the start of the fight. Frozen Stiff damage is too low for this to be a genuine counter, but it is worth noting if you're stuck for a pick.

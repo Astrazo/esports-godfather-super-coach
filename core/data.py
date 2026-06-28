@@ -25,7 +25,9 @@ class InvalidDataError(Exception):
 DATA_DIRECTORY = Path(__file__).parent.parent / "data"
 HERO_INFO_DIRECTORY = DATA_DIRECTORY / "hero_info"
 ROLE_ITEMISATION_DIRECTORY = DATA_DIRECTORY / "role_itemisation"
+TEAM_COMP_DIRECTORY = DATA_DIRECTORY / "team_comp_approaches"
 GLOSSARY_FILE = DATA_DIRECTORY / "glossary.csv"
+TYPES_FILE = DATA_DIRECTORY / "types.csv"
 ITEM_BUILDS = DATA_DIRECTORY / "item_builds.md"
 
 ROLE_ITEMISATION_ALIASES = {
@@ -63,7 +65,7 @@ def read_hero_info(hero_name: str) -> str:
     return hero_info_path.read_text(encoding="utf-8")
 
 
-def read_role_itemisation(role: str) -> str:
+def read_build_type_itemisation(role: str) -> str:
     """Return the markdown notes for a role's itemisation."""
     itemisation_path = ROLE_ITEMISATION_DIRECTORY / _role_to_itemisation_filename(role)
 
@@ -71,6 +73,20 @@ def read_role_itemisation(role: str) -> str:
         return f"No itemisation info found for '{role}'. Ask the user to clarify the role."
 
     return itemisation_path.read_text(encoding="utf-8")
+
+
+def read_team_comp_info(comp_name: str) -> str:
+    """Return the markdown notes for a team composition approach."""
+    comp_filename = f"{_text_to_slug(comp_name)}.md"
+    comp_path = TEAM_COMP_DIRECTORY / comp_filename
+
+    if not comp_path.exists():
+        return (
+            f"No team composition information found for '{comp_name}'. "
+            "Ask the user to clarify the team composition name."
+        )
+
+    return comp_path.read_text(encoding="utf-8")
 
 
 def read_glossary_definition(term: str) -> str:
@@ -83,6 +99,34 @@ def read_glossary_definition(term: str) -> str:
             return f"The definition for {glossary_term} is: {definition}"
 
     return f"No glossary definition found for '{term}'.  Ask the user to clarify the term if you do not know it from general MOBA or card game knowledge."
+
+
+def read_attribute_info(category: str, instance: str) -> str:
+    """Return information about a hero class, attack type, or damage type."""
+    normalised_category = category.strip().lower().replace(" ", "_")
+    normalised_instance = instance.strip().lower()
+
+    with TYPES_FILE.open(newline="", encoding="utf-8-sig") as file:
+        rows = csv.DictReader(file)
+
+        for row in rows:
+            row_category = row["category"].strip().lower()
+            row_name = row["name"].strip()
+
+            if row_category != normalised_category:
+                continue
+
+            if row_name.lower() != normalised_instance:
+                continue
+
+            description = row["description"].strip()
+            display_category = row_category.replace("_", " ")
+            return f"{row_name} is a {display_category}. {description}"
+
+    return (
+        f"No attribute information found for '{instance}' in category "
+        f"'{category}'. Ask the user to clarify the category or attribute."
+    )
 
 
 def _hero_name_to_info_filename(hero_name: str) -> str:

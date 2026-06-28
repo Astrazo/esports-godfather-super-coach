@@ -2,6 +2,14 @@
 Lane bully ADC who can take over games if supported well
 
 # Hero Analysis
+## Attributes
+### Hero Class
+- Marksman
+### Attack Type
+- Ranged
+### Damage Type
+- Hybrid
+
 ## Hero Description
 Felyn is the premier bot lane bully and search target. If supported with search effects she can easily reach a state where she's double killing both of her lane opponents with just field attacks and winning skirmishes before they start; however, this requires heavy investment of support and SP.
 
@@ -18,36 +26,50 @@ To conclude, Felyn has immense potential and can absolutely destroy lanes and ga
 Finally, to give an example, this is what happens when you play a properly supported Felyn: Importantly, note that a) this game was at a sizeable athlete skill deficit, b) Felyn only had a single hero to support her, and c) this is her playing into one of her hard counters. Her teammates' damage isn't low because they were underperforming, it's low because they literally had nothing to do; Felyn simply murders lane and pushes down the nexus. And this isn't just me posting a good game - this is literally what happens every time you pick Felyn-Blocker.
 
 # Cards
-## Card 1
+## Excited State
 ### Description
 Does not exist naturally in the deck; one copy is spawned in hand when Felyn's Energy Level increases. Attack random enemy heroes in the same hex as Felyn up to 5 times based on Energy Level, each dealing 15% damage. Removed when played.
 
 ### Card Analysis
 Extremely dependent on high Energy Level for dealing damage - each attack only does 15% of Felyn's AP as base damage to a maximum of 75% AP, but procs her passive up to 5 times. As a result, this should usually be the last card you play so as to maximise your Energy Level before firing (the exception being when you're using it to soften enemies up prior to initiating). Note that although this is removed when played, it isn't removed when discarded; you can intentionally leave this card unplayed in the early game so as to stack up 4+ copies, search them all out (via Blocker's Signal Detection for instance) and unload on your opponent.
 
-## Card 2
+## Ultimate Charge
 ### Description
 Can only be played while Felyn is in lane. Felyn (and her support, if present) push all the way up to the outermost enemy turret, pushing enemy heroes back with them. She then attacks up to 10 times based on Energy Level targeting random enemy heroes in the same hex and dealing 15% damage per attack. Finally she gains a shield equal to 25 x her level.
 
 ### Card Analysis
 Extremely expensive, you'll generally want to avoid playing this in the early game unless you've got a surplus of SP or you really want the extra 2 Energy to reach a new Energy Level. Instead this is usually reserved for the mid-to-late game when Felyn has stacked up to a high Energy Level; you can then pop this (hopefully with a discount) to shove the enemy into their tower and unload damage cards to either kill them or force them out of lane. You've then got several rounds to beat on their tower for free.
 
-## Card 3
+## Assult Mode
 ### Description
 Felyn gains a shield equal to 25 x her level. She then attacks each enemy hero within 1 hex, gaining 1 Energy for each hit.
 
 ### Card Analysis
 Your best single card for gaining Energy, this can generate up to 5 under normal circumstances (remember she gets 2 for shielding herself on the field). Damage-wise this is better than her other cards early game due to being 100% AP, but falls off later on due to only being one shot per target (and so only proccing her passive once).
 
-## Card 4
+## Tranistion
 ### Description
 Gain 3 Energy and draw 3 cards. You then can't draw any more cards this Deployment Phase.
 
 ### Card Analysis
 A little bit pricey for just drawing 3 cards, you're more playing this for the Energy with the cards as a bonus. That being said, if you're playing Felyn, you've already made the decision to do everything possible to boost her Energy. Remember to play any cycle cards you have (e.g. Warm-Up, Tactical Adjustment etc.) before playing this since you won't draw anything after it's played. Felyn (cont.)
 
+# Variants
+None.
+
 # Item Build
 Multi-Attacker / ADC / Mage. You can build pretty much any combination of damage items on Felyn really, so long as they make at least a little bit of sense. On-hits like Acceleration Coil are the obvious winners, but even a traditional ADC or Mage build will work just fine so long as you're playing to stack Energy.
 
 # Funnelling
 Tutoring, yes. Felyn will dumpster lanes every single game if you tutor her properly. Bonus stats are unnecessary though - she doesn't actually scale all that hard with AP, and shouldn't really need health either.
+
+# Interactions
+Blocker - It really cannot be overstated - Felyn-Blocker wins lane and wins game, pretty much every time. Lady Deadfire can counter Felyn inasmuch as she sets up Felyn to be ganked, but even she can't stop Felyn from murdering her over and over. Blocker provides Felyn with all the search support she needs, and importantly, gives her a shield whenever it takes damage on the field - generating 2 energy each time. There is literally no better ADC-support pair in the game.
+
+Gillis - Notable as the main teamfight counter to Felyn. To properly counter you need to run quite a squishy comp - Felyn's bonus shots will target the highest health enemy - but so long as Gillis is highest health going into a fight Felyn will hammer her with shots in round 1, generating a vast amount of AP for Gillis going into round 2. She will take a bit of a beating herself - her 99% damage reduction does nothing against true damage, obviously - but that's scant consolation when she proceeds to one-shot your tank.
+
+Bart - Although Felyn is a hybrid hero (so you'd think it wouldn't work that way), Bart still gets the full reflection damage - and more to the point, that reflect triggers on every single damage source. If you're building Felyn with on-hit effects that can easily be 3-4 triggers of Bart's reflect damage on every single attack, which has a high probability of ensuring your hyper-fed Felyn will explode herself in the first round of the fight.
+
+Felicity - At last, a hero emerges[yugioh.fandom.com]. Felicity is the perfect storm of a Felyn counter - her debuff is targeted, happens before Felyn attacks, and each of Felyn's bonus attacks will be both triggering the debuff and also stacking it a minimum of two times per hit. The more energy you have, the more on-hit effects you have, the more likely it is Felyn doesn't get to see round 2. Good luck getting her through pick/ban, though.
+
+Felyn is the only one out of 55 heroes that I went onto two pages for. Oof.

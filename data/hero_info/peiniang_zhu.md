@@ -2,6 +2,14 @@
 Support adding inevitability through extremely low damage debuffs.
 
 # Hero Analysis
+## Attributes
+### Hero Class
+- Support
+### Attack Type
+- Ranged
+### Damage Type
+- Magical
+
 ## Hero Description
 Peiniang Zhu is, in theory at least, a support that works by adding the Lightning Mark debuff to enemies, causing them to take additional damage whenever they take damage for the rest of the fight. The debuff stacks, being added whenever an enemy takes an action (and, with masteries, from PZ's attacks as well), which should cause fights to slowly tip in their favour.
 
@@ -14,26 +22,56 @@ I would also note that I recommend building PZ with tank items rather than damag
 v3.1 Update: Disregard the above. Thanks to the Thundercloud buff, Peiniang Zhu is now a fantastic source of damage for next to no investment at all. She still brings no utility, but can apply her debuff reliably enough to consistently place at or near the top of the damage charts in teamfights without requiring any extra resources beyond playing one card four times.
 
 # Cards
-## Card 1
+## Thundercloud
 ### Description
 Gain 2 stacks of the Thundercloud effect, each adding a stack of Lightning Mark to all enemies when entering a fight. Start with 1 token, gains 1 more token for every 25 rounds, and can only play with a token.
 
 ### Card Analysis
 Very expensive for what it does - 3 SP for 3 stacks of Lightning Mark per target is a lot - but still about the best you're going to get out of PZ's cards. And so, of course, it's token-gated. Wouldn't want them to have a card worth playing after all. Post-3.1, this is now a phenomenal card. It now costs 2 SP for 2 stacks, but more importantly, Thundercloud is not removed after a fight. This means that for the low cost of 2 SP every 25 rounds you get a huge amount of added damage with every attack. Play whenever it has a token.
 
-## Card 2
+## Static Lightning
 ### Description
 Add 2 stacks of Lightning Mark to one enemy, draw 1.
 
 ### Card Analysis
 Low impact, but at least it's cheap and cycles so you'll find yourself playing this a fair bit simply to find other (better) cards to play. This does at least have the benefit of not being range-limited, so PZ can contribute to fights elsewhere; it's best used on Fighters who have a big enough health pool to be worth whittling down while not having any additional resistances to mitigate the damage.
 
-## Card 3
+## Thunder Finger
 ### Description
 Attack an enemy, always hitting, and apply the Thunder Finger debuff (when another enemy is attacked, the debuffed enemy takes an equal amount of damage, once only).
 
 ### Card Analysis
 2 SP for a single attack from a low AP support is pretty terrible, so you're going to need to get a lot of mileage out of the debuff to make this worth playing. As this only applies on the field, not in fights, you'll struggle to really get your SP's worth from playing this card at its full cost - 2 SP means duplicating one poke effect, then paying ~1 SP for a support's attack. Curiously, this is purely up-front damage, making it a burst-oriented card very much at odds with PZ's otherwise long-fight-oriented kit. Does have some value when paired with high damage cards like BaJie's Rocket Fist.
+
+# Variants
+
+## Variant 1
+
+### Gained
+- Whenever you play one of Peiniang Zhu's cards apply a stack of Lightning Mark to a random enemy.
+
+### Removed
+- Nothing
+
+### Changed
+- Lightning Mark's extra-damage scaling changed from Peiniang Zhu's level to a flat 2 damage.
+
+### Variant Description
+A curious Variant - Lightning Mark gets weaker, but you can stack it up before fights by playing Peiniang Zhu's cards. Said cards are generally decent but not incredible; whether this makes you play them or just acts as a consolation prize largely depends on your draft and whether there are other heroes that want that SP more. This Variant does encourage you to avoid fights, however, since your pre-applied marks will fall off as soon as that hero has fought. Probably much worse post v3.1 since you've got a much better way of going into fights with Lightning Mark and the main thing making PZ strong now is the ability to ignore her cards.
+
+## Variant 2
+
+### Gained
+- Peiniang Zhu applies a stack of Lightning Mark when they hit with an attack.
+
+### Removed
+- Nothing
+
+### Changed
+- Lightning Mark's extra damage changed from Peiniang Zhu's level plus 2 to 2% of Peiniang Zhu's AP.
+
+### Variant Description
+An even weirder Variant, this is a very rare example of a support that wants to go all-in on AP. Given supports don't get much gold this is a difficult Variant to run (and requires you to itemise to make use of it); if your version happens to be running the rule which gives supports bonus gold generation, however, this Variant becomes really very good (basically a better Crank). Would be pretty great if you could run Peiniang Zhu in mid (though her other Variants would be garbage there). Encourages you to skirmish through bot lane to try to pick up kill gold on your support (comically).
 
 # Item Build
 Support. There are a few notably very strong Mage-adjacent items for PZ (Terror Anthology is AMAZING on her, as is Psychic Glove) but otherwise build support items and maybe something defensive to keep the stacks coming. If Variant 2 comes in, take a heavy AP build and try to manipulate things so she picks up kill gold to pay for it.
@@ -42,3 +80,8 @@ Minor note: Peiniang Zhu's damage does count as an attack for the purposes of st
 
 # Funnelling
 Once more - the point is don't give her anything. Is a great user of bonus AP on Variant 2 though.
+
+# Interactions
+All multi-action heroes - Any allied heroes with multiple damage sources will get double benefit from Lightning Mark; meanwhile, enemy heroes which take multiple actions (slightly different to the above - doesn't include Felyn or those who build items with innate damage) will take additional stacks. AoE heroes will also proc damage from Lightning Mark - Gang is notable here because his AoE is omnipresent but something of an afterthought.
+
+Wukong - as with all debuffs, Lightning Mark (and Thunder Finger, if you forget what you're doing and target him with it) will be reflected onto your entire team when thrown at Wukong.

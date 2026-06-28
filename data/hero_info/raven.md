@@ -2,6 +2,14 @@
 Very feast-or-famine snowballing assassin.
 
 # Hero Analysis
+## Attributes
+### Hero Class
+- Assassin
+### Attack Type
+- Melee
+### Damage Type
+- Magical
+
 ## Hero Description
 Raven is an extremely awkward hero to use. He has awkward cards, awkward positioning, an awkward passive, nothing about him is intuitive. Despite this however he merits a high placing in the tier lists for the simple reason that IF you can get him to work he becomes incredibly dominant and will destroy teams with ease. He's much like Lan in this regard - assassins who require a lot of investment but who will return that investment tenfold if things go right.
 
@@ -18,29 +26,52 @@ In summary, Raven winds up being a version of Lan who does even less early on, b
 As an additional note - Raven gains 2 Abyss stacks going into an objective fight even if that fight doesn't happen because the opposing team declines the fight. Good setup for your objective game can give you some easy stacks this way. You should also take care in your itemisation - Dawnlight Cloak, Whip of Obedience and Archmage Hat can all make a big impact on keeping Raven slapping for longer.
 
 # Cards
-## Card 1
+## Death Claw
 ### Description
 Pick an enemy hero in a straight line from Raven and expend a feather to initiate a 3-round 0-radius fight.
 
 ### Card Analysis
 In keeping with Raven's theme this is quite an awkward card to use - you need to expend a feather to play it, so you can't reposition to play it at close range since every time you do so, the corresponding feather will be consumed. It does come with some bright sides though - it's straight-line but unlimited range so you can make plays from the other side of the map, it consumes a feather while starting a fight (so you go in with 3 extra stacks, guaranteeing you'll at least break even), and it's one of the very few initiations which only pull in heroes from the target's hex, so you can pick off enemy heroes even if the jungler's stood next to them.
 
-## Card 2
+## Rapid Dive
 ### Description
 Expend a feather to move up to three hexes in that direction.
 
 ### Card Analysis
 Simple, though a bit expensive, this does at least have good distance on it and expends at least one feather to try to justify the cost. You'll usually want to be using this to move laterally to set up a Death Claw (i.e. moving northeast so you can initiate southeast etc.), or to jump across the map to join in someone else's initiation. You can also use it to move out of a target's hex (if you're on top of them) to line up a Death Claw without burning the relevant feather.
 
-## Card 3
+## Fly the Night
 ### Description
 Move 1 hex, then return this card to your hand and increase its cost by 1. Cost increases reset when Raven gets a kill in a fight.
 
 ### Card Analysis
 A bit of a shame this only resets on fight kills - otherwise a fed Raven could just flap around the map throwing death at everything he could find. You'll find yourself most commonly using this to pick up cleanup kills after a fight, unfortunately; alternatively you can just throw it out when you've got the spare SP just to grab some Abyss stacks (provided you're in range to throw a feather at someone, of course). You should try to do so especially when you're anticipating a fight Raven doesn't have to initiate - either because a teammate will do it or because there's an objective fight coming up - since you're likely to get the cost reset anyway. You'll almost never want to play this when it costs 2 or more.
 
+# Variants
+None.
+
 # Item Build
 Assassin. Avoid crit - you're working towards your full penetration auto-crits after all. armour penetration is nice, but be wary of indexing too hard into it at the expense of raw AP; crit damage is great if you can get the stacks, awful if you can't.
 
 # Funnelling
 Probably not. You can tutor his cards with a mind to dumping more feathers, but they're kinda pricey for that. Unlikely to be worth throwing stats his way unless you're really sure you can get the Abyss train rolling.
+
+# Interactions
+Shred: Raven's crits happen when his armour penetration is greater than the target's armour. The main way you do that is by improving his armour pen via Abyss, but you can also take the inverse route of lowering the target's armour before he attacks. There are a lot of ways to do that, of course, so look for ways of landing targeted, longer-duration shred (e.g. Wukong's Bludgeon Bash) or team-wide shred (e.g. Reinhardt's initial attack).
+
+Move me: Feathers can be expended from card movement, no matter who it comes from; you can therefore try to draft additional movement sources to help Raven to dump his feathers and get those Abyss stacks rolling. Of course, the catch there is that movement cards in this game are almost universally overcosted, and the few that aren't still cost a lot. There are a few notable cards (Reinhardt's Supersonic, Lady Deadfire's Flame Spread) which are worth bearing in mind though (Crank's Swap doesn't count for some reason).
+v3.1 | Raven
+v3.1 Updates: No changes. Anna cucks him pretty hard though. Also note that Raven's strength heavily varies based on the items in your current version - Double-Layered Armour is a ubiquitous tank item that will be virtually impossible to peck through until late into the fight.
+
+Item build: Assassin. Avoid crit - you're working towards your full penetration auto-crits after all. armour penetration is nice, but be wary of indexing too hard into it at the expense of raw AP; crit damage is great if you can get the stacks, awful if you can't.
+
+Reserve Tactics: A movement card of some kind can help you dump feathers when Fly in Night's cost becomes prohibitive. Nothing much else, though.
+
+Funnelling: Probably not. You can tutor his cards with a mind to dumping more feathers, but they're kinda pricey for that. Unlikely to be worth throwing stats his way unless you're really sure you can get the Abyss train rolling.
+
+Rejected gags:
+I just realised - Raven doesn't seem to have hands, so he had to pay someone to sew that flag on his archive screen for him. That's absolutely adorable.
+
+Hmm. Wikipedia indicates that corvus species tend to have rounder, straighter beaks with no extant species having a jagged lower section. You know, I'm starting to think this guy might not really be a raven at all.
+v3.1 | Leon
+Some designs are original, some are stolen from other IP. Leon was clearly the product of an emaciated homeless man being kicked through a Hot Topic.

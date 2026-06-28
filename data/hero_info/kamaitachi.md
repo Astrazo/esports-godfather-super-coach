@@ -2,6 +2,14 @@
 Multi-attacking Fighter who can put out chunky damage in fights.
 
 # Hero Analysis
+## Attributes
+### Hero Class
+- Assassin
+### Attack Type
+- Melee
+### Damage Type
+- Physical
+
 ## Hero Description
 Kamaitachi is a versatile and high-damage Fighter who can fit into virtually any team comp by virtue of having only one string to his bow - he attacks, and he attacks often. On the field, every time 5 cards enter your discard pile he takes a swing at an enemy within 1 hex; in fights, he attacks once for every 5 actions taken by any hero, friend or foe (though for only 75% damage). Note that while I class him as a Fighter, the game considers him an Assassin (despite him having no tools to actually assassinate anything), giving him higher AP growth and lower health growth than others fitting the Fighter archetype.
 
@@ -33,8 +41,47 @@ Move to an enemy hero's hex, then attack all enemies within 1 hex. Then discard 
 ### Card Analysis
 A much more playable card than Jin thanks to drawing cards to replace the discarded ones, as well as moving to a target's hex. You'll often want to play this early to ensure Kamaitachi is in position to use his passive attacks as you play cards, even if you're not intending to make a play with him.
 
+# Variants
+
+## Variant 1
+
+### Gained
+- Nothing
+
+### Removed
+- Nothing
+
+### Changed
+- Cards required to trigger Kamaitachi's field attack increased from 5 to 6.
+- Actions required to trigger Kamaitachi's bonus attack increased from 5 to 6.
+- Bonus-attack damage increased from 75% to 120%.
+
+### Variant Description
+A sizeable improvement in fights - you're going from 15% damage per action to 20%. For best results itemise heavy AP instead of on-hit items. You do lose a little bit of field power, but not much overall (you'll usually see 1-2 procs per deployment phase either way). Jungle Kamaitachi remains the superior model.
+
+## Variant 2
+
+### Gained
+- Nothing
+
+### Removed
+- Nothing
+
+### Changed
+- Cards required to trigger Kamaitachi's field attack reduced from 5 to 4.
+- Actions required to trigger Kamaitachi's bonus attack reduced from 5 to 4.
+- Bonus-attack damage reduced from 75% to 55%.
+
+### Variant Description
+By contrast, a small nerf in fights (going from 15% damage per action to 13.75%) in exchange for a sizeable jump in field power. You can potentially play around this heavily on the field for some nasty out-of-fight murder builds; either way, though, this makes Kamaitachi incredible as a partner for Bunu Shan. If you're able to build on-hit equipment (especially Acceleration Coil) you can actually wind up gaining damage in fights, too. Mid lane Kamaitachi steals the crown due to usually being in position to smack something.
+
 # Item Build
 Multi-hitter. Probably the iconic multi-hitter for the game, you want anything that triggers off attacks on Kamaitachi, pronto. Acceleration Coil and Ghost Claw are the premium picks.
 
 # Funnelling
 Not so much on his cards, but definitely throw stats his way. Lots of attacks means lots of opportunities to make gifted AP matter, and being melee (with Assassin health gain) means bonus health can keep him alive under fire.
+
+# Interactions
+Fuggen everything - Since combat in this game is very simplified and pretty much entirely based on attacks and buffs/debuffs, it's inevitable that a lot of heroes will have effects which either provide additional attacks or effects which trigger on attack. There are, therefore, a lot of heroes who interact with Kamaitachi, depending on which team they're on. About the closest you get to a counter, though, is Crank - if he can apply his debuff to Kamaitachi early, he'll start eating damage multiple times per round.
+
+Felicity - Move over Crank, Felicity is here to really screw over the multi-attackers. Unlike Crank there's no random targeting to worry about, and every instance of damage is going to stack that passive up. Do not take Kamaitachi into Felicity, ever.

@@ -2,6 +2,14 @@
 Very weak mage with an expensive pet.
 
 # Hero Analysis
+## Attributes
+### Hero Class
+- Mage
+### Attack Type
+- Ranged
+### Damage Type
+- Magical
+
 ## Hero Description
 Kaka is... well, unfortunately Kaka is kinda caca.
 
@@ -42,6 +50,22 @@ Choose an enemy hero within 2 hexes of Stone Hound; Stone Hound moves to them, t
 ### Card Analysis
 Good range and relatively cheap, but you're paying for those benefits by only getting half a hero out of Kaka unless you happen to be attacking someone very close to him. Unless you're packing other movement effects or your target has been poked down pretty severely, this will not secure kills easily.
 
+# Variants
+
+## Variant 1
+
+### Gained
+- Stone Hound shreds 15 armour per attack, applied before the attack lands.
+
+### Removed
+- Stone Hound shreds 10 armour from all enemies at the start of a fight.
+
+### Changed
+- Nothing
+
+### Variant Description
+Really makes barely any difference. In theory should help with Kaka's intended playstyle of map-wide skirmishing since it makes picking off individual targets easier, but it doesn't do anything to resolve his deal-breaking problems.
+
 # Item Build
 Mage. A GA effect (Phoenix Feather or Dissonance) will stop him from imploding if the Stone Hound is killed (provided he's in the fight), but really you're expending half the item's budget on half-heartedly duct taping over the gaping crack in Kaka's hero design.
 
@@ -51,3 +75,6 @@ If you're really desperate to make Kaka work, funnelling is about the only way t
 Frank [only two cards and you need a frontline] Kaka Xiangxi Ke [Discard effects] Omaha [Only two cards and you may as well swarm the field since you're banning Foso anyway] Paisai [Discard and seach] or failing that Qin Hu [Discard and unreliable search, limited by charges]
 
 It still won't be good, but at least you'll have a comp that has frontline, decent damage and a good setup for buffing up the Hound so Kaka isn't instakilled every fight.
+
+# Interactions
+Search-and-discard - About the only thing Kaka has going for him is Stone Hound, so if you've insisted on drafting him for some inexplicable reason, you're going to need search effects to find Stone Curse so that he isn't dying instantly in every fight; searching it out also means it'll be in your hand rather than your deck, so you're not going to get screwed out of SP at an inopportune time. If you really want to double down (and again, I don't recommend doing so), draft a discard effect as well, so you can get Stone Curse out of hand to then find it again. Paisai is notable for having both a discard and a search effect.

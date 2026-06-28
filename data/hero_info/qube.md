@@ -2,6 +2,14 @@
 Strong teamfighting lane bully Fighter.
 
 # Hero Analysis
+## Attributes
+### Hero Class
+- Gladiator
+### Attack Type
+- Melee
+### Damage Type
+- Physical
+
 ## Hero Description
 Qube is a Fighter with high damage output in teamfights and a penchant for bullying lanes. Her central mechanic is Suspect - whenever she hits an enemy hero with an attack on the field they gain a stack of Suspect (max 5). In fights she takes two actions per round; the first is a swing from her nailbat, dealing 70% of her AP as damage and applying a stack of Suspect, while the second fires her revolver at all enemies with Suspect stacks to deal (30% x stacks) AP damage. Note that Suspect is NOT a debuff despite seeming like one, so it can't be reflected by Wukong or cleansed by the various debuff-removal heroes (as funny as it would be to see Qube shoot her entire team).
 
@@ -40,8 +48,28 @@ Starts a fight with all enemy heroes in Qube's hex, and all enemy heroes within 
 ### Card Analysis
 Relatively cheap initiation and can give a nice juicy 5 round fight against an isolated target; thanks to the Suspect targeting, this can allow you to pick a fight with, and kill, a laner even if their jungler is right next door. Be careful if trying to do the inverse however (fight a jungler but not your laner) because heroes on Qube's hex will join either way, and you really don't want to be fighting someone you haven't stacked up first. Also be careful about applying stacks to enemy junglers if you're not going into an objective fight soon, as you could wind up inadvertently preventing yourself from getting an isolated fight as a result.
 
+# Variants
+
+## Variant 1
+
+### Gained
+- Nothing
+
+### Removed
+- Nothing
+
+### Changed
+- Damage dealt by Qube's second attack per Suspect stack reduced from 30% to 15%.
+- Suspect stack removal changed from the end of a fight to when Qube dies.
+
+### Variant Description
+A very, very nice change. While it looks like a nerf - literally halving your Suspect damage per stack - it actually winds up being a buff in most cases because you're not going to have stacks drop off constantly from enemies starting little skirmishes or from them declining an objective fight. You can safely invest into adding Suspect stacks to everyone that comes near Qube, knowing you're very likely to see value from them sooner or later. Makes mid lane Qube notably stronger since she's more likely to be able to toss stacks on the jungler.
+
 # Item Build
 Bruiser and/or Multi-Hitter. Qube can work well with either sets of itemisation; as a general rule you should take the strongest items available from the latter (in other words, take Acceleration Coil) and then fill the rest of the build with Bruiser items since her kit is fundamentally built around AP. You can also build her glass cannon, though you'll need some high Presence tanks to keep her alive long enough to stack up.
 
 # Funnelling
 Decent on both fronts. Qube needs to find a lot of her own cards to be able to reliably murder opposing laners, and thanks to her multi-hitter melee status makes great use of any stats you can throw at her. One of the better Funnel options around (that isn't an obvious choice, anyway).
+
+# Interactions
+No particular interactions beyond the standard multi-attack synergies/counters.

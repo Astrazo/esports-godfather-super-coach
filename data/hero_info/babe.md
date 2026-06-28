@@ -2,6 +2,15 @@
 Stat-stick Fighter with no real strengths or weaknesses.
 
 # Hero Analysis
+
+## Attributes
+### Hero Class
+- Gladiator
+### Attack Type
+- Melee
+### Damage Type
+- Hybrid
+
 ## Hero Description
 Babe is a Fighter who exists exclusively to be a stat stick; he has no real unique qualities other than getting a lot of stats. His passive similarly provides stats - he gets his first item for 20% of the usual price. This allows him to get a chunky power boost early on in the game, though it does of course become entirely irrelevant in the late game when everyone is sitting on full builds.
 
@@ -31,8 +40,27 @@ When this card enters your hand it randomly selects 2 allies and 3 enemies from 
 ### Card Analysis
 Unreliable, but thanks to masteries, a cheap and fairly long duration initiation. Due to Babe's early item gain and stat boosts you'll want to play this frequently early on, then become more discriminating as the game wears on to only take favourable fights. Note that if you kill one of the chosen heroes after this card has entered the hand it will give you a favourable numbers advantage.
 
+# Variants
+
+## Variant 1
+
+### Gained
+- Each time Babe buys an equipment, Free-for-all's cost reduces by 3 until played.
+
+### Removed
+- Search Gift Bundle when participating in a kill, moving it to the far left if already in hand.
+
+### Changed
+- Nothing
+
+### Variant Description
+This variant generally winds up being a small nerf - Babe's power lies in simply out-statting opponents, which is harder to do without Gift Bundle being searched into hand for free. With good luck on your hero selections this can allow Babe to set up very cheap fight kills, but unless you're building a comp around lots of skirmishing it's hard to really make this reliable (and if you are, only getting the discount three times per game is awkward). Does allow for Babe to snowball quickly, though, since picking up kills will get him to his next equipment, and in turn discount, faster.
+
 # Item Build
 Ultimate Iron Fist, Gravity Converter, Dragon Slayer Farming Bell, Gravity Converter, Self-Increasing Dumbbell Archmage Hat, Blue Monolith, Jar of Doom
 
 # Funnelling
 Keep Gift Bundle in hand without playing it by spamming Free-For-All every DP; amplify any buffs granted to Babe via expensive but accessible equipment. Not entirely recommended, but you could do worse.
+
+# Interactions
+Big Foot - Being entirely generic, Babe has no real interactions with anyone; Big Foot is however somewhat notable as his Rapid Cooling card can allow you to keep Gift Bundle in hand without paying the exorbitant 4 SP price.

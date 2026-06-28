@@ -2,6 +2,14 @@
 Target-selecting bruiser with built-in inevitability.
 
 # Hero Analysis
+## Attributes
+### Hero Class
+- Gladiator
+### Attack Type
+- Melee
+### Damage Type
+- Physical
+
 ## Hero Description
 While there are several heroes in the game that prioritise certain targets, Leon is unique in being the only one who gets to pick his targets for the entire game, before anyone even enters a fight. This is accomplished through the card Eternal Brand, which gives its target a debuff (with, confusingly, the exact same name).
 
@@ -18,36 +26,64 @@ Leon in top lane, on the other hand, is weird. You're forced to Brand your lane 
 Note: Despite being a debuff, Eternal Brand isn't treated as one for the purposes of debuff removal. It can't be cleansed by Tivie etc., nor can Felicity eat it or Wukong reflect it. I'd say that's necessary for his kit to function, but it's not like they gave that courtesy to Crank or similar, so...
 
 # Cards
-## Card 1
+## Nightmare Slayer
 ### Description
 Initiate a fight with the target with the most Eternal Brand stacks (seems to prioritise order of debuff application in event of a tie). Four round duration, and no 'join fight' effects apply. If Leon kills his target, they only lose half their stacks.
 
 ### Card Analysis
 An awful lot of card text for what amounts to a scuffle. Given Leon's bruiser profile, you're not getting the kill here unless you line up a lot of stacks beforehand (which is what the card wants you to do) or you're picking off a weakened target. Thanks to retaining half the stacks, though, you can use this to really abuse a stacked target and generate a nice amount of bonus gold.
 
-## Card 2
+## Mad Whisper
 ### Description
 Costs 1 SP per Branded hero. Each Branded hero attacks a random hero within 1 hex (friend or foe, can't target themselves). Nightmare Slayer is then added to your hand.
 
 ### Card Analysis
 Really terrible card, I have no idea why it's designed this way. Random friend-or-foe targeting means nine times out of ten it'll hit a friendly target; even if it does hit an enemy, they're doing the hitting, not Leon, so you don't get any stacks. Never play this.
 
-## Card 3
+## Terrifying Swing
 ### Description
 Leon attacks all enemies within two hexes, and for each hit, adds an extra four stacks of Eternal Brand (total 5). If there's only one eligible target, attack it twice.
 
 ### Card Analysis
 This, on the other hand, is great. The damage itself is going to underwhelm, of course, but if you can isolate a target (and hit twice) that's a cool 30% added to their execute threshold and 350 gold waiting for you to claim. Get a couple of those off and Nightmare Slayer is going to start printing money.
 
-## Card 4
+## Eternal Brand
 ### Description
 Give an enemy hero the Eternal Brand debuff, then attack them. Single use, start with one copy and generate another every time an equipment is activated.
 
 ### Card Analysis
 The card that starts it all. Can't be used on Branded targets, so good luck getting rid of them all. Note the debuff always applies whether the attack hits or not.
 
+# Variants
+None.
+
 # Item Build
 Bruiser. You're going to need enough damage to get your target into execute range, and enough health to survive long enough to get there. Getting gold from stack count means you're disincentivised from building full damage on Leon, but if you're building an assassination comp it might still be worth doing so.
 
 # Funnelling
 Not bad, actually. Searching his cards is generally bad, but double-dipping on Terrifying Swing when you're lined up for it is great; bonus stats, on the other hand, help him do exactly what you brought him to do.
+
+# Interactions
+Double-dip items: Eternal Brand is created when an equipment is activated rather than purchased; this has the curious effect of making the item Chicken Rib generate an extra copy when it turns into Golden Chicken Rib. Really that just means don't build that item on Leon, because he really doesn't want more Brands.
+
+Frank: Since Leon generates stacks from field hits, he acts as the ultimate counter to Frank - sooner or later, Frank will be unable to play his cards without you executing him. What's more, you remove him from teamfights when he's at his most dangerous. The trade-off is you're having to Brand a tank, and he'll almost always have the most stacks.
+
+Deep Space: Hey look, someone who needs to avoid ever getting hit. Guess who's getting hit every round now? Good thing too, Deep Space really needed another counter.
+v3.1 | Leon (cont.)
+v3.1 Updates: Added.
+
+Item build: Bruiser. You're going to need enough damage to get your target into execute range, and enough health to survive long enough to get there. Getting gold from stack count means you're disincentivised from building full damage on Leon, but if you're building an assassination comp it might still be worth doing so.
+
+Reserve Tactics: If you're running him in the jungle, bring an Initiation card since all he's got is Nightmare Slayer. You should probably also bring Focus on your support to get rid of your excess Brand card(s). Ditch Mad Whisper too while you're at it.
+
+Funnelling: Not bad, actually. Searching his cards is generally bad, but double-dipping on Terrifying Swing when you're lined up for it is great; bonus stats, on the other hand, help him do exactly what you brought him to do.
+
+Rejected gags:
+You just know Leon is that one 40-year-old guy at the student club trying and failing to pick up girls half his age. What a creeper.
+
+Maybe this guy's Babe's villain. He does have a chest emblem after all...
+
+Man, and to think I called Nihil an edgelord. These guys just love to double down on me. I still haven't forgotten the whole Hakuna/Matata thing.
+
+v3.1 | Felicity
+Everyone always brings up the whole snakes with boobs[i.kym-cdn.com] thing. But isn't a snake with hair creepier? Especially with that hairstyle.
