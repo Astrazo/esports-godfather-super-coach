@@ -10,14 +10,24 @@ class DraftState:
     t1_picked: dict[str, set[str]]
     t2_picked: dict[str, set[str]]
     banned: set[str]
+    draft_order: list[tuple[str, str]]
+    current_step: int
+    player_side: str
 
-def build_draft_state():
+
+def build_draft_state(
+    draft_order: list[tuple[str, str]],
+    player_side: str,
+):
     return DraftState(
         t1_available={},
         t1_picked={},
         t2_available={},
         t2_picked={},
-        banned=set()
+        banned=set(),
+        draft_order=draft_order.copy(),
+        current_step=0,
+        player_side=player_side,
     )
 
 def recommend_pick(

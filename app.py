@@ -1,25 +1,23 @@
 import copy
+import json
 from collections import defaultdict
 
 import networkx as nx
 import plotly.graph_objects as go
 import streamlit as st
 
-from core.agent import agent
+from core.agent import build_agent
 from core.data import build_global_data
-from core.draft import (
-    ban_hero,
-    build_draft_state,
-    build_position_availability,
-    pick_hero,
-    recommend_pick,
-)
+from core.draft import (ban_hero, build_draft_state,
+                        build_position_availability, pick_hero, recommend_pick)
 from core.graph import build_master_graph, confirm_hero_masteries
 from core.hero_mastery import POSITIONS, create_empty_masteries, set_mastery
 from core.persistence import (
     load_coach_messages,
+    load_draft_order,
     load_t1_masteries,
     save_coach_messages,
+    save_draft_order,
     save_t1_masteries,
 )
 
@@ -36,6 +34,29 @@ RELATIONSHIP_LABELS = {
     "countered_by": "Countered by",
     "anti_synergy": "Anti-synergy",
 }
+
+DEFAULT_DRAFT_ORDER = [
+    ("blue", "Ban"),
+    ("red", "Ban"),
+    ("blue", "Ban"),
+    ("red", "Ban"),
+    ("blue", "Ban"),
+    ("red", "Ban"),
+    ("blue", "Pick"),
+    ("red", "Pick"),
+    ("red", "Pick"),
+    ("blue", "Pick"),
+    ("blue", "Pick"),
+    ("red", "Pick"),
+    ("red", "Pick"),
+    ("blue", "Pick"),
+    ("red", "Ban"),
+    ("blue", "Ban"),
+    ("blue", "Ban"),
+    ("red", "Ban"),
+    ("blue", "Pick"),
+    ("red", "Pick"),
+]
 
 
 def enable_page_scroll_over_inputs():
@@ -89,7 +110,8 @@ def enable_page_scroll_over_inputs():
 def load_game():
     data = build_global_data()
     graph = build_master_graph(data)
-    return data, graph
+    agent = build_agent(data)
+    return data, graph, agent
 
 
 def initialise_session(default_graph):
@@ -107,9 +129,25 @@ def initialise_session(default_graph):
 
     if "draft_state" not in st.session_state:
         st.session_state.draft_state = None
+    elif (
+        st.session_state.draft_state is not None
+        and not hasattr(st.session_state.draft_state, "player_side")
+    ):
+        st.session_state.draft_state = None
 
     if "confirmed_t2_positions" not in st.session_state:
         st.session_state.confirmed_t2_positions = set()
+
+    if "draft_order" not in st.session_state:
+        st.session_state.draft_order = load_draft_order(DEFAULT_DRAFT_ORDER)
+    else:
+        st.session_state.draft_order = [
+            ({"t1": "blue", "t2": "red"}.get(side, side), action)
+            for side, action in st.session_state.draft_order
+        ]
+
+    if "draft_analysis" not in st.session_state:
+        st.session_state.draft_analysis = {}
 
     if "coach_messages" not in st.session_state:
         st.session_state.coach_messages = load_coach_messages()
@@ -121,7 +159,7 @@ def initialise_session(default_graph):
     )
 
 
-def render_coach():
+def render_coach(agent):
     st.header("Coach")
     st.caption("Ask about heroes, builds, attributes, game terms, or team compositions.")
 
@@ -181,32 +219,55 @@ def mastery_editor(
         placeholder="Type a hero name...",
     )
 
-    heroes = sorted(
+    all_position_heroes = sorted(
         hero
         for hero in graph.nodes
-        if position in masteries[hero] and search.lower() in hero.lower()
+        if position in masteries[hero]
     )
+    visible_heroes = [
+        hero
+        for hero in all_position_heroes
+        if search.lower() in hero.lower()
+    ]
 
-    if not heroes:
+    if not visible_heroes:
         st.info("No heroes match this position and filter.")
         return False
 
-    with st.form(f"{editor_key}_form"):
-        columns = st.columns(3)
-        pending_levels = {}
+    pending_key = f"{editor_key}_pending_{position}"
+    if pending_key not in st.session_state:
+        st.session_state[pending_key] = {
+            hero: masteries[hero][position]
+            for hero in all_position_heroes
+        }
 
-        for index, hero in enumerate(heroes):
-            with columns[index % len(columns)]:
-                pending_levels[hero] = st.number_input(
-                    hero,
-                    min_value=0,
-                    max_value=7,
-                    value=masteries[hero][position],
-                    step=1,
-                    key=f"{editor_key}_{position}_{hero}",
-                )
+    pending_levels = st.session_state[pending_key]
+    columns = st.columns(3)
 
-        submitted = st.form_submit_button(submit_label, type="primary")
+    for index, hero in enumerate(visible_heroes):
+        with columns[index % len(columns)]:
+            pending_levels[hero] = st.number_input(
+                hero,
+                min_value=0,
+                max_value=7,
+                value=pending_levels[hero],
+                step=1,
+                key=f"{editor_key}_{position}_{hero}",
+            )
+
+    has_changes = any(
+        pending_levels[hero] != masteries[hero][position]
+        for hero in all_position_heroes
+    )
+    if has_changes:
+        st.caption("You have unsaved mastery changes for this position.")
+
+    submitted = st.button(
+        submit_label,
+        type="primary",
+        disabled=not has_changes and confirmed_positions is None,
+        key=f"{editor_key}_save_{position}",
+    )
 
     if submitted:
         for hero, level in pending_levels.items():
@@ -379,17 +440,21 @@ def apply_t2_knowledge(graph):
         draft_state.t2_available[position] = latest_available[position] - unavailable
 
 
-def start_draft(graph):
+def start_draft(graph, player_side):
     confirm_hero_masteries(
         graph,
         st.session_state.t1_masteries,
         st.session_state.t2_masteries,
     )
 
-    draft_state = build_draft_state()
+    draft_state = build_draft_state(
+        st.session_state.draft_order,
+        player_side,
+    )
     draft_state.t1_available = build_position_availability(st.session_state.t1_masteries)
     draft_state.t2_available = build_position_availability(st.session_state.t2_masteries)
     st.session_state.draft_state = draft_state
+    st.session_state.draft_analysis = {}
 
 
 def render_team_picks(title, picked):
@@ -403,8 +468,7 @@ def render_team_picks(title, picked):
         st.write(f"{hero}: {position_text}")
 
 
-def render_recommendation(data, graph, draft_state, team, position):
-    st.subheader("Recommendation")
+def render_recommendation(data, graph, draft_state, team, position, agent):
     try:
         recommendation = recommend_pick(
             graph,
@@ -417,12 +481,128 @@ def render_recommendation(data, graph, draft_state, team, position):
         st.info(f"No known {team.upper()} heroes are available for {position}.")
         return
 
+    render_recommendation_result(
+        recommendation,
+        title="Pick recommendation",
+        metric_label="Best pick",
+    )
+    render_agent_analysis(
+        agent,
+        recommendation,
+        draft_state,
+        recommendation_type="player pick",
+    )
+
+
+def render_ban_recommendation(data, graph, draft_state, agent):
+    recommendations = []
+
+    for position in POSITIONS:
+        try:
+            recommendation = recommend_pick(
+                graph,
+                "t2",
+                position,
+                draft_state,
+                data,
+            )
+        except (KeyError, ValueError):
+            continue
+
+        recommendations.append(recommendation)
+
+    if not recommendations:
+        st.info("No known CPU picks are available to use for a ban recommendation.")
+        return
+
+    strongest_cpu_pick = max(
+        recommendations,
+        key=lambda recommendation: recommendation["score"],
+    )
+    render_recommendation_result(
+        strongest_cpu_pick,
+        title="Ban recommendation",
+        metric_label="Best hero to ban",
+    )
+    render_agent_analysis(
+        agent,
+        strongest_cpu_pick,
+        draft_state,
+        recommendation_type="player ban",
+    )
+
+
+def render_agent_analysis(
+    agent,
+    recommendation,
+    draft_state,
+    recommendation_type,
+):
+    position = recommendation["requested_lane"]
+    recommended_hero = recommendation["recommended_hero"]
+    analysis_key = (
+        draft_state.current_step,
+        recommendation_type,
+        position,
+        recommended_hero,
+    )
+
+    if st.button(
+        "Ask coach to explain",
+        key=f"draft_coach_{'_'.join(str(value) for value in analysis_key)}",
+    ):
+        context = {
+            "recommendation_type": recommendation_type,
+            "recommended_hero": recommended_hero,
+            "position": position,
+            "score": recommendation["score"],
+            "reasons": recommendation["explanation"],
+            "player_picks": {
+                hero: sorted(positions)
+                for hero, positions in draft_state.t1_picked.items()
+            },
+            "cpu_picks": {
+                hero: sorted(positions)
+                for hero, positions in draft_state.t2_picked.items()
+            },
+            "banned_heroes": sorted(draft_state.banned),
+        }
+        prompt = (
+            "Explain this draft recommendation concisely. Treat the supplied "
+            "recommendation as authoritative. Use your tools if hero-specific "
+            "information would improve the explanation.\n\n"
+            + json.dumps(context, indent=2, default=str)
+        )
+
+        with st.spinner("Coach is reviewing the draft..."):
+            try:
+                result = agent.invoke(
+                    {"messages": [{"role": "user", "content": prompt}]}
+                )
+                analysis = result["messages"][-1].content
+            except Exception as error:
+                st.error(f"The coach could not explain this recommendation: {error}")
+            else:
+                st.session_state.draft_analysis[analysis_key] = analysis
+
+    analysis = st.session_state.draft_analysis.get(analysis_key)
+    if analysis:
+        st.info(analysis)
+
+
+def render_recommendation_result(recommendation, title, metric_label):
+    st.subheader(title)
     best = recommendation["recommended_hero"]
     score = recommendation["score"]
     explanation = recommendation["explanation"]
     better_position = recommendation["better_position"]
 
-    st.metric("Best pick", best, f"{score:.2f} score")
+    st.metric(metric_label, best, f"{score:.2f} score")
+    if metric_label == "Best hero to ban":
+        st.caption(
+            "Strongest projected CPU pick for "
+            f"{recommendation['requested_lane']}."
+        )
 
     if better_position:
         alternative_lane = better_position["lane"]
@@ -430,7 +610,7 @@ def render_recommendation(data, graph, draft_state, team, position):
         st.warning(
             f"If you can, consider {best} for {alternative_lane} instead "
             f"(scores {alternative_score:.2f} in {alternative_lane} "
-            f"vs {score:.2f} in {position})"
+            f"vs {score:.2f} in {recommendation['requested_lane']})"
         )
 
     for reason, heroes in explanation.items():
@@ -466,33 +646,62 @@ def render_hero_buttons(graph, draft_state, action, team, position, search):
                     pick_hero(graph, hero, team, draft_state)
                 else:
                     ban_hero(hero, draft_state)
+                draft_state.current_step += 1
                 st.rerun()
 
 
-def render_active_draft(data, graph):
+def render_active_draft(data, graph, agent):
     draft_state = st.session_state.draft_state
+    cpu_side = "red" if draft_state.player_side == "blue" else "blue"
 
     header_columns = st.columns([3, 2, 3])
     with header_columns[0]:
-        render_team_picks("T1 Picks", draft_state.t1_picked)
+        render_team_picks(
+            f"Player Picks ({draft_state.player_side.title()})",
+            draft_state.t1_picked,
+        )
     with header_columns[1]:
         st.markdown("**Bans**")
         st.write(", ".join(sorted(draft_state.banned)) or "No bans yet.")
     with header_columns[2]:
-        render_team_picks("T2 Picks", draft_state.t2_picked)
+        render_team_picks(
+            f"CPU Picks ({cpu_side.title()})",
+            draft_state.t2_picked,
+        )
 
     st.divider()
 
-    control_columns = st.columns(3)
-    with control_columns[0]:
-        team = st.selectbox("Team", ["t1", "t2"], format_func=str.upper)
-    with control_columns[1]:
-        position = st.selectbox("Position", POSITIONS)
-    with control_columns[2]:
-        action = st.radio("Action", ["Pick", "Ban"], horizontal=True)
+    if draft_state.current_step >= len(draft_state.draft_order):
+        st.success("Draft complete.")
+        if st.button("End draft"):
+            end_draft(graph)
+            st.rerun()
+        return
+
+    acting_side, action = draft_state.draft_order[draft_state.current_step]
+    is_player_turn = acting_side == draft_state.player_side
+    team = "t1" if is_player_turn else "t2"
+    actor = "Player" if is_player_turn else "CPU"
+    step_number = draft_state.current_step + 1
+    st.subheader(f"Step {step_number} of {len(draft_state.draft_order)}")
+    side_marker = "🔵" if acting_side == "blue" else "🔴"
+    st.info(f"{side_marker} {acting_side.title()} — {actor} {action}")
 
     if action == "Pick":
-        render_recommendation(data, graph, draft_state, team, position)
+        position = st.selectbox("Position", POSITIONS)
+        if is_player_turn:
+            render_recommendation(
+                data,
+                graph,
+                draft_state,
+                team,
+                position,
+                agent,
+            )
+    else:
+        position = None
+        if is_player_turn:
+            render_ban_recommendation(data, graph, draft_state, agent)
 
     search = st.text_input("Filter hero buttons", placeholder="Type a hero name...")
     render_hero_buttons(graph, draft_state, action, team, position, search)
@@ -514,17 +723,112 @@ def render_active_draft(data, graph):
             st.rerun()
 
     if st.button("End draft"):
-        st.session_state.draft_state = None
-        st.session_state.t2_masteries = create_empty_masteries(graph)
-        st.session_state.confirmed_t2_positions = set()
+        end_draft(graph)
         st.rerun()
 
 
-def render_draft(data, graph):
+def end_draft(graph):
+    st.session_state.draft_state = None
+    st.session_state.t2_masteries = create_empty_masteries(graph)
+    st.session_state.confirmed_t2_positions = set()
+    st.session_state.draft_analysis = {}
+
+    for key in list(st.session_state):
+        if key.startswith(("setup_t2_masteries_", "draft_t2_masteries_")):
+            del st.session_state[key]
+
+
+def render_game_version():
+    st.header("Game Version")
+    st.write("Set the draft sequence for your current game version.")
+
+    st.caption("Current sequence")
+    st.write(
+        " → ".join(
+            f"{'🔵' if side == 'blue' else '🔴'} {side.title()} {action}"
+            for side, action in st.session_state.draft_order
+        )
+    )
+
+    if "draft_order_buffer" not in st.session_state:
+        if st.button("Set draft order", type="primary"):
+            st.session_state.draft_order_buffer = []
+            st.rerun()
+        return
+
+    st.subheader("Build draft order")
+    st.caption("Add each action in the order it occurs.")
+
+    action_buttons = st.columns(4)
+    available_actions = [
+        ("blue", "Pick"),
+        ("blue", "Ban"),
+        ("red", "Pick"),
+        ("red", "Ban"),
+    ]
+
+    for column, (side, action) in zip(action_buttons, available_actions):
+        side_marker = "🔵" if side == "blue" else "🔴"
+        with column:
+            if st.button(
+                f"{side_marker} {side.title()} {action}",
+                width="stretch",
+                key=f"add_{side}_{action}",
+            ):
+                st.session_state.draft_order_buffer.append((side, action))
+                st.rerun()
+
+    draft_order_buffer = st.session_state.draft_order_buffer
+    if draft_order_buffer:
+        st.write(
+            " → ".join(
+                f"{'🔵' if side == 'blue' else '🔴'} {side.title()} {action}"
+                for side, action in draft_order_buffer
+            )
+        )
+    else:
+        st.info("No actions added yet.")
+
+    controls = st.columns(4)
+    with controls[0]:
+        if st.button(
+            "Undo last",
+            disabled=not draft_order_buffer,
+            width="stretch",
+        ):
+            draft_order_buffer.pop()
+            st.rerun()
+    with controls[1]:
+        if st.button(
+            "Clear",
+            disabled=not draft_order_buffer,
+            width="stretch",
+        ):
+            draft_order_buffer.clear()
+            st.rerun()
+    with controls[2]:
+        if st.button("Cancel", width="stretch"):
+            del st.session_state.draft_order_buffer
+            st.rerun()
+    with controls[3]:
+        if st.button(
+            "Save",
+            type="primary",
+            disabled=not draft_order_buffer,
+            width="stretch",
+        ):
+            st.session_state.draft_order = draft_order_buffer.copy()
+            save_draft_order(st.session_state.draft_order)
+            del st.session_state.draft_order_buffer
+            st.success("Draft order saved.")
+            st.rerun()
+
+
+def render_draft(data, graph, agent):
     st.header("Draft")
 
     if st.session_state.draft_state is not None:
-        render_active_draft(data, graph)
+        render_active_draft(data, graph, agent)
         return
 
     st.write(
@@ -550,8 +854,15 @@ def render_draft(data, graph):
         )
     )
 
+    player_side = st.radio(
+        "Your side for this game",
+        ["blue", "red"],
+        format_func=lambda side: f"{'🔵' if side == 'blue' else '🔴'} {side.title()}",
+        horizontal=True,
+    )
+
     if st.button("Confirm T2 and start draft", type="primary"):
-        start_draft(graph)
+        start_draft(graph, player_side)
         st.rerun()
 
 
@@ -563,24 +874,26 @@ def main():
     )
     enable_page_scroll_over_inputs()
 
-    data, default_graph = load_game()
+    data, default_graph, agent = load_game()
     initialise_session(default_graph)
     graph = st.session_state.graph
 
     st.sidebar.title("Lazy Esports Godfather")
     page = st.sidebar.radio(
         "Navigate",
-        ["Coach", "My Team", "Master Graph", "Start Draft"],
+        ["Coach", "My Team", "Master Graph", "Game Version", "Start Draft"],
     )
 
     if page == "Coach":
-        render_coach()
+        render_coach(agent)
     elif page == "My Team":
         render_my_team(graph)
     elif page == "Master Graph":
         render_graph_explorer(data, graph)
+    elif page == "Game Version":
+        render_game_version()
     else:
-        render_draft(data, graph)
+        render_draft(data, graph, agent)
 
 
 if __name__ == "__main__":

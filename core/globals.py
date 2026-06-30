@@ -62,5 +62,5 @@ def get_position_best_heroes(
     return output
 
 
-# best_positions = get_hero_best_positions("Bart", verbose=True, tier=1)
+best_positions = get_hero_best_positions("Bart", verbose=True, tier=1)
 # best_heroes = get_position_best_heroes(["Top", "Mid"], verbose=True)

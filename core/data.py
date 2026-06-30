@@ -54,7 +54,6 @@ ROLE_ITEMISATION_ALIASES = {
     "special case": "special_case",
 }
 
-
 def read_hero_info(hero_name: str) -> str:
     """Return the markdown notes for a hero."""
     hero_info_path = HERO_INFO_DIRECTORY / _hero_name_to_info_filename(hero_name)
