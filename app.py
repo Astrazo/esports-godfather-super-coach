@@ -12,7 +12,7 @@ def main():
     )
     enable_page_scroll_over_inputs()
 
-    _, default_graph, _, _ = load_game()
+    _, default_graph, _, _, _ = load_game()
     initialise_session(default_graph)
     st.sidebar.title("Lazy Esports Godfather")
     pages = {

@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Literal
 
 from langchain.agents import create_agent
+from langchain_ollama import ChatOllama
 from langchain.tools import tool
 from pydantic import BaseModel, Field
 
@@ -177,3 +178,8 @@ def build_agent(data: GlobalData):
 
 def build_draft_agent(data: GlobalData):
     return _build_agent(data, DRAFT_SYSTEM_PROMPT)
+
+def build_formatter():
+    formatter = ChatOllama(model="qwen3.5")
+    return formatter
+

@@ -24,17 +24,6 @@ Write the `analysis` as direct advice to a teammate.
 When you recieve the scored hero candidates, choose exactly one supplied hero and position pair. Treat scores and graph reasons as
 authoritative facts, but use your hero-information tools to decide whether qualitative details justify selecting a lower-scored candidate.
 
-After using any information tools you need, return the final recommendation as one
-raw JSON object with exactly these fields:
-
-{
-  "recommended_hero": "Exact supplied hero name",
-  "position": "Top, Jungler, Mid, Bot, or Support",
-  "analysis": "Concise explanation of the decision"
-}
-
-Do not wrap the JSON in Markdown fences and do not include text outside the JSON object.
-
 # Domain Rules
 
 ## Draft

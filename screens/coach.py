@@ -5,7 +5,7 @@ from core.runtime import load_game
 
 
 def render():
-    _, _, agent, _ = load_game()
+    _, _, agent, _, _ = load_game()
 
     st.header("Coach")
     st.caption("Ask about heroes, builds, attributes, game terms, or team compositions.")

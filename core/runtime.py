@@ -2,7 +2,7 @@ import copy
 
 import streamlit as st
 
-from core.agent import build_agent, build_draft_agent
+from core.agent import build_agent, build_draft_agent, build_formatter
 from core.data import build_global_data
 from core.graph import build_master_graph, confirm_hero_masteries
 from core.hero_mastery import create_empty_masteries
@@ -39,7 +39,8 @@ def load_game():
     graph = build_master_graph(data)
     agent = build_agent(data)
     draft_agent = build_draft_agent(data)
-    return data, graph, agent, draft_agent
+    formatter = build_formatter()
+    return data, graph, agent, draft_agent, formatter
 
 
 def initialise_session(default_graph):

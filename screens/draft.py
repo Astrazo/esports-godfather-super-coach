@@ -16,6 +16,7 @@ from core.graph import confirm_hero_masteries
 from core.hero_mastery import POSITIONS, create_empty_masteries
 from core.runtime import load_game
 from screens.common import mastery_editor
+from langchain_ollama import ChatOllama
 
 
 def unavailable_heroes(draft_state):
@@ -90,7 +91,7 @@ def render_hero_buttons(graph, draft_state, action, team, position, search):
                 st.rerun()
 
 
-def render_active_draft(data, graph, agent):
+def render_active_draft(data, graph, agent, formatter):
     draft_state = st.session_state.draft_state
     cpu_side = "red" if draft_state.player_side == "blue" else "blue"
 
@@ -175,30 +176,29 @@ def render_active_draft(data, graph, agent):
                     },
                     "banned_heroes": sorted(draft_state.banned),
                 }
+  
                 prompt = (
                     "Choose the best hero and position for the current draft action. "
                     "Use the graph results as authoritative evidence and consult tools when "
                     "hero-specific information would improve the decision. Explain the choice "
                     "as direct advice to a teammate, using concrete draft-specific reasons. \n"
-                    "The analysis must be one or two complete sentences and no more than 80 words. Do not mention numeric scores."
-                    "Close all JSON strings and braces before finishing.\n\n"
-                    "Return your answer in exactly one raw JSON object using this structure:\n"
-                    """
-                {
-                "recommended_hero": "Exact supplied hero name",
-                "position": "Top, Jungler, Mid, Bot, or Support",
-                "analysis": "Concise explanation of the decision"
-                }
-                """
                     "\nDraft context:\n"
                     + json.dumps(context, indent=2, default=str)
                 )
                 with st.spinner("Coach is reacting to the draft..."):
                     try:
                         result = agent.invoke({"messages": [{"role": "user", "content": prompt}]})
+                        print(result)
                         response_text = str(result["messages"][-1].text).strip()
-                        print(response_text)
-                        decision = DraftRecommendationDecision.model_validate_json(response_text)
+
+                        #print(response_text)
+                        
+                        # Parse with formatter to get a decision
+                        structured = formatter.with_structured_output(DraftRecommendationDecision, method="json_schema")
+                        decision = structured.invoke(f"Extract the recommended hero name, the position, and the analysis from this answer: {response_text}")
+
+                        print(decision)
+
                         recommendation = select_scored_candidate(
                             graph_scores,
                             decision.recommended_hero,
@@ -298,13 +298,13 @@ def end_draft(graph):
 
 
 def render():
-    data, _, _, draft_agent = load_game()
+    data, _, _, draft_agent, formatter = load_game()
     graph = st.session_state.graph
 
     st.header("Draft")
 
     if st.session_state.draft_state is not None:
-        render_active_draft(data, graph, draft_agent)
+        render_active_draft(data, graph, draft_agent, formatter)
         return
 
     st.write(
