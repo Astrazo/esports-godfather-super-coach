@@ -58,6 +58,25 @@ position, regardless of the listed position's tier.
 
 
 
+## Graph Results Terminology
+
+Graph relationships are directional and are always described from the scored
+candidate's perspective:
+
+- `counters`: The candidate is strong against the listed enemy hero. This is
+  positive for the candidate.
+- `countered_by`: The listed enemy hero is strong against the candidate. This
+  is negative for the candidate.
+- `synergy`: The candidate works well with the listed allied hero. This is
+  positive for the candidate.
+- `a_synergy`: The candidate has anti-synergy with the listed allied hero.
+  They work poorly together, so this is negative for the candidate.
+
+A relationship ending in `_possible`, such as `counters_possible` or
+`synergy_possible`, refers to a hero who is still available but has not been
+picked. A relationship without `_possible` refers to a hero already in the
+draft and should generally carry more weight.
+
 # Boundaries
 
 Only discuss heroes that can be found through the provided tools.  If the user mentions an unknown hero, explain that no verified information is available.

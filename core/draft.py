@@ -1,7 +1,9 @@
+import warnings
 from collections import defaultdict
 from dataclasses import dataclass
+
 from core.data import GlobalData
-import warnings
+
 
 @dataclass
 class DraftState:
@@ -30,7 +32,8 @@ def build_draft_state(
         player_side=player_side,
     )
 
-def recommend_pick(
+
+def score_position(
     G,
     team: str,
     lane: str,
@@ -44,28 +47,47 @@ def recommend_pick(
     friendly_available = draft_state.t1_available if team == "t1" else draft_state.t2_available
     enemy_available = draft_state.t2_available if team == "t1" else draft_state.t1_available
 
-
     # Score all candidates for the requested lane
     candidates = friendly_available[lane]
     results = {
-        hero: _score_hero(G, team, hero, lane, friendly_available, friendly_picked, enemy_available, enemy_picked, data)
+        hero: _score_hero(
+            G,
+            team,
+            hero,
+            lane,
+            friendly_available,
+            friendly_picked,
+            enemy_available,
+            enemy_picked,
+            data,
+        )
         for hero in candidates
     }
-    
+
     # Get the best pick for this lane, Each value is: (score, explanation)
     best = max(results, key=lambda hero: results[hero][0])
     best_score, best_explanation = results[best]
-    
+
     # Check if best pick scores higher in another lane
     other_results = {
-        other_lane: _score_hero(G, team, best, other_lane, friendly_available, friendly_picked, enemy_available, enemy_picked, data)
+        other_lane: _score_hero(
+            G,
+            team,
+            best,
+            other_lane,
+            friendly_available,
+            friendly_picked,
+            enemy_available,
+            enemy_picked,
+            data,
+        )
         for other_lane, pool in friendly_available.items()
         if other_lane != lane and best in pool
     }
 
     better_position = None
 
-    if other_results :
+    if other_results:
         best_alt_lane = max(
             other_results,
             key=lambda other_lane: other_results[other_lane][0],
@@ -85,8 +107,7 @@ def recommend_pick(
                 "hero": hero,
                 "score": score,
                 "explanation": {
-                    reason: sorted(values, key=str)
-                    for reason, values in explanation.items()
+                    reason: sorted(values, key=str) for reason, values in explanation.items()
                 },
             }
         )
@@ -94,38 +115,121 @@ def recommend_pick(
     candidates.sort(key=lambda candidate: candidate["score"], reverse=True)
 
     return {
-        "recommended_hero": best,
+        "best_hero": best,
         "requested_lane": lane,
         "score": best_score,
         "explanation": {
-            reason: sorted(values, key=str)
-            for reason, values in best_explanation.items()
+            reason: sorted(values, key=str) for reason, values in best_explanation.items()
         },
         "better_position": better_position,
         "candidates": candidates,
     }
 
 
+def score_all_positions(
+    graph,
+    team: str,
+    draft_state: DraftState,
+    data: GlobalData,
+    positions,
+) -> list[dict]:
+    """Score and rank the available heroes for every supplied position."""
+    available = draft_state.t1_available if team == "t1" else draft_state.t2_available
+    position_scores = []
+
+    for position in positions:
+        if not available.get(position):
+            continue
+
+        position_scores.append(
+            score_position(
+                graph,
+                team,
+                position,
+                draft_state,
+                data,
+            )
+        )
+
+    return position_scores
+
+
+def build_candidate_shortlist(
+    position_scores,
+    candidates_per_position: int = 3,
+) -> list[dict]:
+    """Flatten the strongest candidates from each position for agent review."""
+    shortlist = []
+
+    for position_score in position_scores:
+        position = position_score["requested_lane"]
+        for candidate in position_score["candidates"][:candidates_per_position]:
+            shortlist.append(
+                {
+                    "hero": candidate["hero"],
+                    "position": position,
+                    "score": candidate["score"],
+                    "reasons": candidate["explanation"],
+                }
+            )
+
+    return shortlist
+
+
+def select_scored_candidate(
+    position_scores,
+    selected_hero: str,
+    selected_position: str,
+    candidates_per_position: int = 3,
+) -> dict:
+    """Map an agent selection back to its authoritative graph result."""
+    for position_score in position_scores:
+        if position_score["requested_lane"] != selected_position:
+            continue
+
+        for candidate in position_score["candidates"][:candidates_per_position]:
+            if candidate["hero"] != selected_hero:
+                continue
+
+            selected_score = position_score.copy()
+            selected_score.update(
+                {
+                    "best_hero": candidate["hero"],
+                    "score": candidate["score"],
+                    "explanation": candidate["explanation"],
+                    "better_position": None,
+                }
+            )
+            return selected_score
+
+    raise ValueError(
+        f"Coach selected {selected_hero} for {selected_position}, "
+        "which was not in the supplied shortlist."
+    )
+
+
 def _score_hero(
-        G, 
-        team: str,
-        candidate,
-        position, # for tier and mastery scoring
-        friendly_available: set, friendly_picked: set, 
-        enemy_available: set, enemy_picked: set,
-        data: GlobalData
-    ):
-    
+    G,
+    team: str,
+    candidate,
+    position,  # for tier and mastery scoring
+    friendly_available: set,
+    friendly_picked: set,
+    enemy_available: set,
+    enemy_picked: set,
+    data: GlobalData,
+):
+
     # Team Comp Weights
     w_countered_picked = 3
     w_countered_available = 1.5
-   
+
     w_synergy_picked = 1
     w_synergy_available = 0.5
-    
+
     w_counter_picked = 2
     w_counter_available = 1
-    
+
     w_a_synergy_picked = 0.5
     w_a_synergy_available = 0.25
 
@@ -141,11 +245,13 @@ def _score_hero(
 
     friendly_available_distinct = set().union(*friendly_available.values())
     enemy_available_distinct = set().union(*enemy_available.values())
-    
-    #1. Is there anything that counters this hero that can be picked against it?  
-    # TODO for each hero that counteres this one, how good/strong is that counter?  Score reductions should be based on how strong the counter is
-    # TODO for each hero that counter's this one, has been picked already?  Heroes that have been picked should carry a stronger importance
-    countered_by = {v for _, v, d in G.out_edges(candidate, data=True) if d["type"] == "countered_by"}
+
+    # 1. Is there anything that counters this hero that can be picked against it?
+    # TODO: Weight score reductions by the strength of each available counter.
+    # TODO: Give already-picked counters more importance than available counters.
+    countered_by = {
+        v for _, v, d in G.out_edges(candidate, data=True) if d["type"] == "countered_by"
+    }
     for hero in countered_by:
         if hero in enemy_picked:
             score -= w_countered_picked
@@ -165,7 +271,7 @@ def _score_hero(
             explanation["synergy_possible"].add(hero)
 
     # 3. Are there opportunities to counter enemy heroes?
-    # TODO heros that we can counter with higher masteries should carry a higher weight over ones that aren't as strong
+    # TODO: Give counters with higher player mastery more weight.
     counters = {v for _, v, d in G.out_edges(candidate, data=True) if d["type"] == "counter"}
     for hero in counters:
         if hero in enemy_picked:
@@ -176,7 +282,9 @@ def _score_hero(
             explanation["counters_possible"].add(hero)
 
     # 4. Are there any issues with picking this hero with our current heroes?
-    anti_synergy = {v for _, v, d in G.out_edges(candidate, data=True) if d["type"] == "anti_synergy"}
+    anti_synergy = {
+        v for _, v, d in G.out_edges(candidate, data=True) if d["type"] == "anti_synergy"
+    }
     for hero in anti_synergy:
         if hero in friendly_picked:
             score -= w_a_synergy_picked
@@ -198,9 +306,7 @@ def _score_hero(
 
 
 # Hero set manipulation functions
-def pick_hero(
-        G, hero: str, team: str, draft_state: DraftState
-    ):
+def pick_hero(G, hero: str, team: str, draft_state: DraftState):
 
     # Unpack data
     t1_available = draft_state.t1_available
@@ -216,20 +322,16 @@ def pick_hero(
     # Set positions this new hero could play
     masteries_text = "t1_masteries" if team == "t1" else "t2_masteries"
     t_picked[hero] = {
-        position
-        for position, mastery in G.nodes[hero][masteries_text].items()
-        if mastery > 0
+        position for position, mastery in G.nodes[hero][masteries_text].items() if mastery > 0
     }
 
     changed = True
     while changed:
         changed = False
-        
+
         # See what positions are locked
         locked_positions = {
-            next(iter(positions))
-            for positions in t_picked.values()
-            if len(positions) == 1
+            next(iter(positions)) for positions in t_picked.values() if len(positions) == 1
         }
 
         for possible_positions in t_picked.values():
@@ -251,6 +353,7 @@ def pick_hero(
                     stacklevel=2,
                 )
 
+
 def ban_hero(hero: str, draft_state: DraftState):
 
     t1_available = draft_state.t1_available
@@ -262,8 +365,10 @@ def ban_hero(hero: str, draft_state: DraftState):
         pool.discard(hero)
     draft_state.banned.add(hero)
 
+
 def see_current_draft(team: str, draft_state: DraftState):
     return draft_state.t1_picked if team == "t1" else draft_state.t2_picked
+
 
 def see_current_banned(draft_state: DraftState):
     return draft_state.banned

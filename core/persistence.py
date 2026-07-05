@@ -42,13 +42,10 @@ def load_coach_messages():
     if not isinstance(saved_messages, list):
         return []
 
-    return [
-        {"role": message["role"], "content": message["content"]}
-        for message in saved_messages
-        if isinstance(message, dict)
-        and message.get("role") in {"user", "assistant"}
-        and isinstance(message.get("content"), str)
-    ]
+    if not isinstance(saved_messages, list):
+        return []
+
+    return saved_messages
 
 
 def save_coach_messages(messages):

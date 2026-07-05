@@ -2,12 +2,15 @@ import json
 
 import streamlit as st
 
+from core.agent import DraftRecommendationDecision
 from core.draft import (
     ban_hero,
+    build_candidate_shortlist,
     build_draft_state,
     build_position_availability,
     pick_hero,
-    recommend_pick,
+    score_all_positions,
+    select_scored_candidate,
 )
 from core.graph import confirm_hero_masteries
 from core.hero_mastery import POSITIONS, create_empty_masteries
@@ -57,142 +60,6 @@ def render_team_picks(title, picked):
     for hero, positions in picked.items():
         position_text = ", ".join(sorted(positions)) or "No known position"
         st.write(f"{hero}: {position_text}")
-
-
-def render_recommendation(data, graph, draft_state, team, position, agent):
-    try:
-        recommendation = recommend_pick(graph, team, position, draft_state, data)
-    except (KeyError, ValueError):
-        st.info(f"No known {team.upper()} heroes are available for {position}.")
-        return
-
-    render_recommendation_result(
-        recommendation,
-        title="Pick recommendation",
-        metric_label="Best pick",
-    )
-    render_agent_analysis(
-        agent,
-        recommendation,
-        draft_state,
-        recommendation_type="player pick",
-    )
-
-
-def render_ban_recommendation(data, graph, draft_state, agent):
-    recommendations = []
-
-    for position in POSITIONS:
-        try:
-            recommendation = recommend_pick(
-                graph,
-                "t2",
-                position,
-                draft_state,
-                data,
-            )
-        except (KeyError, ValueError):
-            continue
-
-        recommendations.append(recommendation)
-
-    if not recommendations:
-        st.info("No known CPU picks are available to use for a ban recommendation.")
-        return
-
-    strongest_cpu_pick = max(
-        recommendations,
-        key=lambda recommendation: recommendation["score"],
-    )
-    render_recommendation_result(
-        strongest_cpu_pick,
-        title="Ban recommendation",
-        metric_label="Best hero to ban",
-    )
-    render_agent_analysis(
-        agent,
-        strongest_cpu_pick,
-        draft_state,
-        recommendation_type="player ban",
-    )
-
-
-def render_agent_analysis(agent, recommendation, draft_state, recommendation_type):
-    position = recommendation["requested_lane"]
-    recommended_hero = recommendation["recommended_hero"]
-    analysis_key = (
-        draft_state.current_step,
-        recommendation_type,
-        position,
-        recommended_hero,
-    )
-
-    if st.button(
-        "Ask coach to explain",
-        key=f"draft_coach_{'_'.join(str(value) for value in analysis_key)}",
-    ):
-        context = {
-            "recommendation_type": recommendation_type,
-            "recommended_hero": recommended_hero,
-            "position": position,
-            "score": recommendation["score"],
-            "reasons": recommendation["explanation"],
-            "player_picks": {
-                hero: sorted(positions) for hero, positions in draft_state.t1_picked.items()
-            },
-            "cpu_picks": {
-                hero: sorted(positions) for hero, positions in draft_state.t2_picked.items()
-            },
-            "banned_heroes": sorted(draft_state.banned),
-        }
-        prompt = (
-            "Explain this draft recommendation concisely. Treat the supplied "
-            "recommendation as authoritative. Use your tools if hero-specific "
-            "information would improve the explanation.\n\n"
-            + json.dumps(context, indent=2, default=str)
-        )
-
-        with st.spinner("Coach is reviewing the draft..."):
-            try:
-                result = agent.invoke({"messages": [{"role": "user", "content": prompt}]})
-                analysis = result["messages"][-1].content
-            except Exception as error:
-                st.error(f"The coach could not explain this recommendation: {error}")
-            else:
-                st.session_state.draft_analysis[analysis_key] = analysis
-
-    analysis = st.session_state.draft_analysis.get(analysis_key)
-    if analysis:
-        st.info(analysis)
-
-
-def render_recommendation_result(recommendation, title, metric_label):
-    st.subheader(title)
-    best = recommendation["recommended_hero"]
-    score = recommendation["score"]
-    explanation = recommendation["explanation"]
-    better_position = recommendation["better_position"]
-
-    st.metric(metric_label, best, f"{score:.2f} score")
-    if metric_label == "Best hero to ban":
-        st.caption(f"Strongest projected CPU pick for {recommendation['requested_lane']}.")
-
-    if better_position:
-        alternative_lane = better_position["lane"]
-        alternative_score = better_position["score"]
-        st.warning(
-            f"If you can, consider {best} for {alternative_lane} instead "
-            f"(scores {alternative_score:.2f} in {alternative_lane} "
-            f"vs {score:.2f} in {recommendation['requested_lane']})"
-        )
-
-    for reason, heroes in explanation.items():
-        values = ", ".join(str(hero) for hero in heroes)
-        st.write(f"**{reason.replace('_', ' ').title()}:** {values}")
-
-    with st.expander("All candidate scores"):
-        for candidate in recommendation["candidates"]:
-            st.write(f"{candidate['hero']}: {candidate['score']:.2f}")
 
 
 def render_hero_buttons(graph, draft_state, action, team, position, search):
@@ -260,21 +127,140 @@ def render_active_draft(data, graph, agent):
     side_marker = "🔵" if acting_side == "blue" else "🔴"
     st.info(f"{side_marker} {acting_side.title()} — {actor} {action}")
 
-    if action == "Pick":
-        position = st.selectbox("Position", POSITIONS)
-        if is_player_turn:
-            render_recommendation(
-                data,
-                graph,
-                draft_state,
-                team,
-                position,
-                agent,
+    recommended_position = None
+    if is_player_turn:
+        if action == "Pick":
+            scoring_team = "t1"
+            recommendation_type = "player pick"
+            title = "Pick recommendation"
+            metric_label = "Best hero to pick"
+            empty_message = "No known player picks are available."
+        else:
+            scoring_team = "t2"
+            recommendation_type = "player ban"
+            title = "Ban recommendation"
+            metric_label = "Best hero to ban"
+            empty_message = "No known CPU picks are available to evaluate."
+
+        graph_scores = score_all_positions(
+            graph,
+            scoring_team,
+            draft_state,
+            data,
+            POSITIONS,
+        )
+
+        if not graph_scores:
+            st.info(empty_message)
+        else:
+            shortlist = build_candidate_shortlist(graph_scores)
+            analysis_key = (
+                draft_state.current_step,
+                recommendation_type,
+                json.dumps(shortlist, sort_keys=True, default=str),
             )
+            cached_result = st.session_state.draft_analysis.get(analysis_key)
+
+            if cached_result:
+                recommendation, analysis = cached_result
+            else:
+                context = {
+                    "recommendation_type": recommendation_type,
+                    "candidates": shortlist,
+                    "player_picks": {
+                        hero: sorted(positions) for hero, positions in draft_state.t1_picked.items()
+                    },
+                    "cpu_picks": {
+                        hero: sorted(positions) for hero, positions in draft_state.t2_picked.items()
+                    },
+                    "banned_heroes": sorted(draft_state.banned),
+                }
+                prompt = (
+                    "Choose the best hero and position for the current draft action. "
+                    "Use the graph results as authoritative evidence and consult tools when "
+                    "hero-specific information would improve the decision. Explain the choice "
+                    "as direct advice to a teammate, using concrete draft-specific reasons. \n"
+                    "The analysis must be one or two complete sentences and no more than 80 words. Do not mention numeric scores."
+                    "Close all JSON strings and braces before finishing.\n\n"
+                    "Return your answer in exactly one raw JSON object using this structure:\n"
+                    """
+                {
+                "recommended_hero": "Exact supplied hero name",
+                "position": "Top, Jungler, Mid, Bot, or Support",
+                "analysis": "Concise explanation of the decision"
+                }
+                """
+                    "\nDraft context:\n"
+                    + json.dumps(context, indent=2, default=str)
+                )
+                with st.spinner("Coach is reacting to the draft..."):
+                    try:
+                        result = agent.invoke({"messages": [{"role": "user", "content": prompt}]})
+                        response_text = str(result["messages"][-1].text).strip()
+                        print(response_text)
+                        decision = DraftRecommendationDecision.model_validate_json(response_text)
+                        recommendation = select_scored_candidate(
+                            graph_scores,
+                            decision.recommended_hero,
+                            decision.position,
+                        )
+                        analysis = decision.analysis
+                    except Exception as error:
+                        recommendation = max(
+                            graph_scores,
+                            key=lambda score: score["score"],
+                        )
+                        analysis = (
+                            "The qualitative review failed, so this uses the highest "
+                            f"graph score. Details: {error}"
+                        )
+
+                st.session_state.draft_analysis[analysis_key] = (
+                    recommendation,
+                    analysis,
+                )
+
+            recommended_position = recommendation["requested_lane"]
+            best = recommendation["best_hero"]
+            score = recommendation["score"]
+
+            st.subheader(title)
+            st.metric(metric_label, best, f"{score:.2f} score")
+            if action == "Ban":
+                st.caption(f"Strongest projected CPU pick for {recommendation['requested_lane']}.")
+
+            better_position = recommendation["better_position"]
+            if better_position:
+                alternative_lane = better_position["lane"]
+                alternative_score = better_position["score"]
+                st.warning(
+                    f"If you can, consider {best} for {alternative_lane} instead "
+                    f"(scores {alternative_score:.2f} in {alternative_lane} "
+                    f"vs {score:.2f} in {recommendation['requested_lane']})"
+                )
+
+            for reason, heroes in recommendation["explanation"].items():
+                values = ", ".join(str(hero) for hero in heroes)
+                st.write(f"**{reason.replace('_', ' ').title()}:** {values}")
+
+            st.info(analysis)
+            with st.expander("All candidate scores"):
+                for candidate in recommendation["candidates"]:
+                    st.write(f"{candidate['hero']}: {candidate['score']:.2f}")
+
+    if action == "Pick":
+        default_position_index = (
+            POSITIONS.index(recommended_position) if recommended_position in POSITIONS else 0
+        )
+
+        position = st.selectbox(
+            "Position",
+            POSITIONS,
+            index=default_position_index,
+            key=f"draft_position_{draft_state.current_step}",
+        )
     else:
         position = None
-        if is_player_turn:
-            render_ban_recommendation(data, graph, draft_state, agent)
 
     search = st.text_input("Filter hero buttons", placeholder="Type a hero name...")
     render_hero_buttons(graph, draft_state, action, team, position, search)
@@ -307,18 +293,18 @@ def end_draft(graph):
     st.session_state.draft_analysis = {}
 
     for key in list(st.session_state):
-        if key.startswith(("setup_t2_masteries_", "draft_t2_masteries_")):
+        if key.startswith(("setup_t2_masteries_", "draft_t2_masteries_", "draft_position_")):
             del st.session_state[key]
 
 
 def render():
-    data, _, agent = load_game()
+    data, _, _, draft_agent = load_game()
     graph = st.session_state.graph
 
     st.header("Draft")
 
     if st.session_state.draft_state is not None:
-        render_active_draft(data, graph, agent)
+        render_active_draft(data, graph, draft_agent)
         return
 
     st.write(

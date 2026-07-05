@@ -111,7 +111,7 @@ def _graph_figure(graph, focus_hero, relationship_types):
 
 
 def render():
-    data, _, _ = load_game()
+    data, _, _, _ = load_game()
     graph = st.session_state.graph
 
     st.header("Master Graph")
