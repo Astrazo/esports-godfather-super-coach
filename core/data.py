@@ -60,8 +60,29 @@ def read_hero_info(hero_name: str) -> str:
 
     if not hero_info_path.exists():
         return f"No hero info found for '{hero_name}'. Ask the user to clarify the hero name."
+    
+    hero_info = hero_info_path.read_text(encoding="utf-8")
+    
+    # Take apart the headings
+    summary = _extract_markdown_section(hero_info, heading="Hero Summary")
+    analysis = _extract_markdown_section(hero_info, heading="Hero Analysis")
+    description = _extract_markdown_section(hero_info, heading="Hero Description")
+    variants = _extract_markdown_section(hero_info, heading="Variants")
+    interactions = _extract_markdown_section(hero_info, heading="Interactions")
 
-    return hero_info_path.read_text(encoding="utf-8")
+    sections = [
+        ("Hero Summary", summary),
+        ("Hero Analysis", analysis),
+        ("Hero Description", description),
+        ("Variants", variants),
+        ("Interactions", interactions),
+    ]
+
+    return "\n\n".join(
+        f"# {heading}\n{content}"
+        for heading, content in sections
+        if content
+    ) 
 
 
 def read_build_type_itemisation(role: str) -> str:
@@ -278,3 +299,29 @@ def _build_tag_hero_map(
         for tag in hero_tags:
             lookup[tag].append(hero)
     return lookup
+
+
+def _extract_markdown_section(markdown: str, heading: str, level: int = 1) -> str:
+    heading_marker = "#" * level
+    target = f"{heading_marker} {heading}".casefold()
+
+    section_lines = []
+    inside_section = False
+
+    for line in markdown.splitlines():
+        stripped = line.strip()
+
+        if stripped.casefold() == target:
+            inside_section = True
+            continue
+
+        if inside_section and stripped.startswith("#"):
+            marker = stripped.split(maxsplit=1)[0]
+
+            if set(marker) == {"#"} and len(marker) <= level:
+                break
+
+        if inside_section:
+            section_lines.append(line)
+
+    return "\n".join(section_lines).strip()

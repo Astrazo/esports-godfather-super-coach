@@ -2,21 +2,19 @@ import json
 
 import streamlit as st
 
-from core.agent import DraftRecommendationDecision
 from core.draft import (
     ban_hero,
     build_candidate_shortlist,
     build_draft_state,
     build_position_availability,
+    get_scored_candidate,
     pick_hero,
     score_all_positions,
-    select_scored_candidate,
 )
 from core.graph import confirm_hero_masteries
 from core.hero_mastery import POSITIONS, create_empty_masteries
 from core.runtime import load_game
 from screens.common import mastery_editor
-from langchain_ollama import ChatOllama
 
 
 def unavailable_heroes(draft_state):
@@ -132,39 +130,50 @@ def render_active_draft(data, graph, agent, formatter):
     if is_player_turn:
         if action == "Pick":
             scoring_team = "t1"
-            recommendation_type = "player pick"
-            title = "Pick recommendation"
-            metric_label = "Best hero to pick"
+            recommendation_type = "pick - this is a hero we are picking for our lineup"
+            title = "Pick Recommendation"
+            metric_label = "Suggested hero to pick."
             empty_message = "No known player picks are available."
         else:
             scoring_team = "t2"
-            recommendation_type = "player ban"
-            title = "Ban recommendation"
-            metric_label = "Best hero to ban"
+            recommendation_type = (
+                "ban - this is a hero we are banning to remove them for both teams"
+            )
+            title = "Ban Recommendation"
+            metric_label = "Suggested hero to ban."
             empty_message = "No known CPU picks are available to evaluate."
 
-        graph_scores = score_all_positions(
+        # Get the positions scores using the graph
+        position_scores = score_all_positions(
             graph,
             scoring_team,
             draft_state,
             data,
             POSITIONS,
         )
+        print(f"Position Scores: {position_scores}\n")
 
-        if not graph_scores:
+        if not position_scores:
             st.info(empty_message)
         else:
-            shortlist = build_candidate_shortlist(graph_scores)
+            # From the position scores, build a shortlist of the heroes the agent should consider
+            shortlist = build_candidate_shortlist(position_scores)
+            print(f"Shortlist: {shortlist}\n")
+
+            # Store analysis so it doesn't redo itself cause streamlit is stupid
             analysis_key = (
+                "candidate_lists_v2",
                 draft_state.current_step,
                 recommendation_type,
                 json.dumps(shortlist, sort_keys=True, default=str),
             )
             cached_result = st.session_state.draft_analysis.get(analysis_key)
 
+            # Check if analysis exists due to above reasons
             if cached_result:
                 recommendation, analysis = cached_result
             else:
+                # Build draft context for the agent
                 context = {
                     "recommendation_type": recommendation_type,
                     "candidates": shortlist,
@@ -176,39 +185,57 @@ def render_active_draft(data, graph, agent, formatter):
                     },
                     "banned_heroes": sorted(draft_state.banned),
                 }
-  
+
                 prompt = (
-                    "Choose the best hero and position for the current draft action. "
-                    "Use the graph results as authoritative evidence and consult tools when "
-                    "hero-specific information would improve the decision. Explain the choice "
-                    "as direct advice to a teammate, using concrete draft-specific reasons. \n"
-                    "\nDraft context:\n"
-                    + json.dumps(context, indent=2, default=str)
+                    "Suggest the best hero and position for the current draft action. "
+                    "Use the graph results as authoritative evidence and consult tools "
+                    "when hero-specific information would improve the decision. You may "
+                    "override the graph when verified hero information justifies it. "
+                    "Explain the choice as direct advice to a teammate using concrete "
+                    "draft-specific and hero-based reasons.\n\n"
+                    "Draft context:\n" + json.dumps(context, indent=2, default=str)
                 )
+                print(f"Prompt: {prompt}\n")
+
                 with st.spinner("Coach is reacting to the draft..."):
                     try:
                         result = agent.invoke({"messages": [{"role": "user", "content": prompt}]})
-                        print(result)
                         response_text = str(result["messages"][-1].text).strip()
+                        print(f"AI Response: {response_text}\n")
 
-                        #print(response_text)
-                        
+                        for index, message in enumerate(result["messages"]):
+                            print(
+                                index,
+                                type(message).__name__,
+                                repr(str(message.text)),
+                                getattr(message, "tool_calls", None),
+                                getattr(message, "invalid_tool_calls", None),
+                            )
+
                         # Parse with formatter to get a decision
-                        structured = formatter.with_structured_output(DraftRecommendationDecision, method="json_schema")
-                        decision = structured.invoke(f"Extract the recommended hero name, the position, and the analysis from this answer: {response_text}")
-
-                        print(decision)
-
-                        recommendation = select_scored_candidate(
-                            graph_scores,
-                            decision.recommended_hero,
-                            decision.position,
+                        final_decision = formatter.invoke(
+                            "Extract the recommended hero name, position, and analysis "
+                            f"from this answer:\n\n{response_text}"
                         )
-                        analysis = decision.analysis
+                        print(f"Final Decision: {final_decision}\n")
+
+                        # Grab the candidate's graph info for UI
+                        recommendation = get_scored_candidate(
+                            position_scores,
+                            final_decision.recommended_hero,
+                            final_decision.position,
+                        )
+
+                        analysis = final_decision.analysis
                     except Exception as error:
-                        recommendation = max(
-                            graph_scores,
-                            key=lambda score: score["score"],
+                        best_candidate = max(
+                            shortlist,
+                            key=lambda candidate: candidate["score"],
+                        )
+                        recommendation = get_scored_candidate(
+                            position_scores,
+                            best_candidate["hero"],
+                            best_candidate["position"],
                         )
                         analysis = (
                             "The qualitative review failed, so this uses the highest "
@@ -220,24 +247,15 @@ def render_active_draft(data, graph, agent, formatter):
                     analysis,
                 )
 
-            recommended_position = recommendation["requested_lane"]
-            best = recommendation["best_hero"]
+            # Extract
+            recommended_position = recommendation["position"]
+            best = recommendation["hero"]
             score = recommendation["score"]
 
             st.subheader(title)
             st.metric(metric_label, best, f"{score:.2f} score")
             if action == "Ban":
-                st.caption(f"Strongest projected CPU pick for {recommendation['requested_lane']}.")
-
-            better_position = recommendation["better_position"]
-            if better_position:
-                alternative_lane = better_position["lane"]
-                alternative_score = better_position["score"]
-                st.warning(
-                    f"If you can, consider {best} for {alternative_lane} instead "
-                    f"(scores {alternative_score:.2f} in {alternative_lane} "
-                    f"vs {score:.2f} in {recommendation['requested_lane']})"
-                )
+                st.caption(f"Strongest projected CPU pick for {recommendation['position']}.")
 
             for reason, heroes in recommendation["explanation"].items():
                 values = ", ".join(str(hero) for hero in heroes)

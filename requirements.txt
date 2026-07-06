@@ -1,0 +1,11 @@
+fastapi
+langchain
+langchain-anthropic
+langchain-google-genai
+langchain-ollama
+langchain-openai
+networkx
+pandas
+pydantic
+pyinstaller
+uvicorn[standard]

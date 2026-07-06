@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lazy Esports Godfather</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">Lazy Esports<br><strong>Godfather</strong></div>
+    <nav>
+      <button class="nav-link active" data-page="coach">Coach</button>
+      <button class="nav-link" data-page="team">My Team</button>
+      <button class="nav-link" data-page="graph">Master Graph</button>
+      <button class="nav-link" data-page="version">Game Version</button>
+      <button class="nav-link" data-page="draft">Draft</button>
+      <button class="nav-link" data-page="settings">Settings</button>
+    </nav>
+    <div id="ai-status" class="status"></div>
+  </aside>
+
+  <main>
+    <div id="notice" class="notice hidden"></div>
+
+    <section id="page-coach" class="page active">
+      <div class="page-heading">
+        <div>
+          <h1>Coach</h1>
+          <p>Ask about heroes, builds, attributes, game terms, or team compositions.</p>
+        </div>
+        <button id="clear-coach" class="secondary">Clear conversation</button>
+      </div>
+      <div id="chat-messages" class="chat-messages"></div>
+      <form id="coach-form" class="chat-form">
+        <textarea id="coach-input" rows="2" placeholder="What are your thoughts on Babe?"></textarea>
+        <button type="submit">Send</button>
+      </form>
+    </section>
+
+    <section id="page-team" class="page">
+      <h1>My Team</h1>
+      <p>Manage the heroes your team can play. A mastery of zero makes a hero unavailable.</p>
+      <div id="team-editor"></div>
+    </section>
+
+    <section id="page-graph" class="page">
+      <h1>Master Graph</h1>
+      <p>Explore the relationships originating from a selected hero.</p>
+      <div class="toolbar">
+        <label>Hero <select id="graph-hero"></select></label>
+        <div id="graph-types" class="checks"></div>
+      </div>
+      <div class="graph-legend" aria-label="Relationship colour key">
+        <span><i class="synergy"></i>Synergy</span>
+        <span><i class="counter"></i>Counters</span>
+        <span><i class="countered-by"></i>Countered by</span>
+        <span><i class="anti-synergy"></i>Anti-synergy</span>
+      </div>
+      <div id="graph-canvas" class="graph-canvas"></div>
+      <div id="graph-details" class="card"></div>
+    </section>
+
+    <section id="page-version" class="page">
+      <h1>Game Version</h1>
+      <p>Set the draft sequence for your current game version.</p>
+      <div id="draft-order"></div>
+    </section>
+
+    <section id="page-draft" class="page">
+      <h1>Draft</h1>
+      <div id="draft-content"></div>
+    </section>
+
+    <section id="page-settings" class="page">
+      <h1>Settings</h1>
+      <p>Configure the optional language model used by the coach and draft review.</p>
+      <form id="model-settings" class="settings-form card">
+        <label>
+          Provider
+          <select id="model-provider">
+            <option value="">Disabled — graph only</option>
+            <option value="ollama">Ollama</option>
+            <option value="openai">OpenAI</option>
+            <option value="anthropic">Anthropic</option>
+            <option value="google_genai">Google Gemini</option>
+          </select>
+        </label>
+        <label>
+          Model name
+          <input id="model-name" placeholder="For example: qwen3.5">
+        </label>
+        <label id="base-url-field">
+          Base URL <span class="muted">(optional)</span>
+          <input id="model-base-url" placeholder="For example: http://127.0.0.1:11434">
+        </label>
+        <label id="api-key-field">
+          API key
+          <input id="model-api-key" type="password" autocomplete="off"
+            placeholder="Kept in memory for this run">
+        </label>
+        <p id="model-help" class="muted"></p>
+        <button type="submit">Save model settings</button>
+      </form>
+    </section>
+  </main>
+
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

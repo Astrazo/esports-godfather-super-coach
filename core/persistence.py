@@ -1,18 +1,31 @@
 import json
+import os
+import sys
 from pathlib import Path
 
 
-USER_DATA_DIRECTORY = Path(__file__).parent.parent / "user_data"
+def _user_data_directory():
+    configured_directory = os.getenv("LEG_USER_DATA")
+    if configured_directory:
+        return Path(configured_directory).expanduser()
+
+    if getattr(sys, "frozen", False):
+        local_app_data = Path(os.getenv("LOCALAPPDATA", Path.home()))
+        return local_app_data / "Lazy Esports Godfather"
+
+    return Path(__file__).parent.parent / "user_data"
+
+
+USER_DATA_DIRECTORY = _user_data_directory()
 T1_MASTERIES_FILE = USER_DATA_DIRECTORY / "t1_masteries.json"
 COACH_MESSAGES_FILE = USER_DATA_DIRECTORY / "coach_messages.json"
 DRAFT_ORDER_FILE = USER_DATA_DIRECTORY / "draft_order.json"
+MODEL_SETTINGS_FILE = USER_DATA_DIRECTORY / "model_settings.json"
 
 
 def load_t1_masteries(default_masteries):
     saved_masteries = _read_json(T1_MASTERIES_FILE, {})
-    masteries = {
-        hero: positions.copy() for hero, positions in default_masteries.items()
-    }
+    masteries = {hero: positions.copy() for hero, positions in default_masteries.items()}
 
     if not isinstance(saved_masteries, dict):
         return masteries
@@ -75,6 +88,15 @@ def load_draft_order(default_order):
 
 def save_draft_order(draft_order):
     _write_json(DRAFT_ORDER_FILE, draft_order)
+
+
+def load_model_settings():
+    settings = _read_json(MODEL_SETTINGS_FILE, {})
+    return settings if isinstance(settings, dict) else {}
+
+
+def save_model_settings(settings):
+    _write_json(MODEL_SETTINGS_FILE, settings)
 
 
 def _read_json(path, default):

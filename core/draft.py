@@ -33,13 +33,48 @@ def build_draft_state(
     )
 
 
+def score_all_positions(
+    graph,
+    team: str,
+    draft_state: DraftState,
+    data: GlobalData,
+    positions,
+) -> dict:
+    """Score and rank the available heroes for every supplied position."""
+    available = draft_state.t1_available if team == "t1" else draft_state.t2_available
+    all_position_scores = {}
+
+    for position in positions:
+        if not available.get(position):
+            continue
+
+        # Score this position
+        position_scores = score_position(
+            graph,
+            team,
+            position,
+            draft_state,
+            data,
+        )
+
+        # Append this score to the position
+        all_position_scores[position] = position_scores
+
+    return all_position_scores
+
+
 def score_position(
     G,
     team: str,
     lane: str,
     draft_state: DraftState,
     data: GlobalData,
-) -> dict:
+) -> list[dict]:
+    """Score heroes that are available and can play the requested position.
+
+    Returns:
+        Candidates ordered from highest to lowest score.
+    """
 
     # Determine enemy and friendly teams and unpack data
     friendly_picked = draft_state.t1_picked if team == "t1" else draft_state.t2_picked
@@ -64,42 +99,6 @@ def score_position(
         for hero in candidates
     }
 
-    # Get the best pick for this lane, Each value is: (score, explanation)
-    best = max(results, key=lambda hero: results[hero][0])
-    best_score, best_explanation = results[best]
-
-    # Check if best pick scores higher in another lane
-    other_results = {
-        other_lane: _score_hero(
-            G,
-            team,
-            best,
-            other_lane,
-            friendly_available,
-            friendly_picked,
-            enemy_available,
-            enemy_picked,
-            data,
-        )
-        for other_lane, pool in friendly_available.items()
-        if other_lane != lane and best in pool
-    }
-
-    better_position = None
-
-    if other_results:
-        best_alt_lane = max(
-            other_results,
-            key=lambda other_lane: other_results[other_lane][0],
-        )
-        alt_score, _ = other_results[best_alt_lane]
-
-        if alt_score > best_score:
-            better_position = {
-                "lane": best_alt_lane,
-                "score": alt_score,
-            }
-
     candidates = []
     for hero, (score, explanation) in results.items():
         candidates.append(
@@ -113,45 +112,7 @@ def score_position(
         )
 
     candidates.sort(key=lambda candidate: candidate["score"], reverse=True)
-
-    return {
-        "best_hero": best,
-        "requested_lane": lane,
-        "score": best_score,
-        "explanation": {
-            reason: sorted(values, key=str) for reason, values in best_explanation.items()
-        },
-        "better_position": better_position,
-        "candidates": candidates,
-    }
-
-
-def score_all_positions(
-    graph,
-    team: str,
-    draft_state: DraftState,
-    data: GlobalData,
-    positions,
-) -> list[dict]:
-    """Score and rank the available heroes for every supplied position."""
-    available = draft_state.t1_available if team == "t1" else draft_state.t2_available
-    position_scores = []
-
-    for position in positions:
-        if not available.get(position):
-            continue
-
-        position_scores.append(
-            score_position(
-                graph,
-                team,
-                position,
-                draft_state,
-                data,
-            )
-        )
-
-    return position_scores
+    return candidates
 
 
 def build_candidate_shortlist(
@@ -161,9 +122,8 @@ def build_candidate_shortlist(
     """Flatten the strongest candidates from each position for agent review."""
     shortlist = []
 
-    for position_score in position_scores:
-        position = position_score["requested_lane"]
-        for candidate in position_score["candidates"][:candidates_per_position]:
+    for position, candidates in position_scores.items():
+        for candidate in candidates[:candidates_per_position]:
             shortlist.append(
                 {
                     "hero": candidate["hero"],
@@ -172,35 +132,27 @@ def build_candidate_shortlist(
                     "reasons": candidate["explanation"],
                 }
             )
-
     return shortlist
 
 
-def select_scored_candidate(
+def get_scored_candidate(
     position_scores,
     selected_hero: str,
     selected_position: str,
     candidates_per_position: int = 3,
 ) -> dict:
     """Map an agent selection back to its authoritative graph result."""
-    for position_score in position_scores:
-        if position_score["requested_lane"] != selected_position:
+    candidates = position_scores[selected_position]
+
+    for candidate in candidates[:candidates_per_position]:
+        if candidate["hero"] != selected_hero:
             continue
 
-        for candidate in position_score["candidates"][:candidates_per_position]:
-            if candidate["hero"] != selected_hero:
-                continue
-
-            selected_score = position_score.copy()
-            selected_score.update(
-                {
-                    "best_hero": candidate["hero"],
-                    "score": candidate["score"],
-                    "explanation": candidate["explanation"],
-                    "better_position": None,
-                }
-            )
-            return selected_score
+        return {
+            "position": selected_position,
+            **candidate,
+            "candidates": candidates,
+        }
 
     raise ValueError(
         f"Coach selected {selected_hero} for {selected_position}, "

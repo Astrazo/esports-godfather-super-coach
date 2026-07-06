@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Literal
 
 from langchain.agents import create_agent
-from langchain_ollama import ChatOllama
+from langchain.chat_models import init_chat_model
 from langchain.tools import tool
 from pydantic import BaseModel, Field
 
@@ -34,7 +34,7 @@ class DraftRecommendationDecision(BaseModel):
     )
 
 
-def _build_agent(data: GlobalData, system_prompt, response_format=None):
+def _build_agent(data: GlobalData, system_prompt, model: str, response_format=None):
     @tool
     def get_hero_best_positions(hero_name: str) -> str:
         """Return the position suitabiliy for the requested hero for the requested tier.
@@ -155,7 +155,7 @@ def _build_agent(data: GlobalData, system_prompt, response_format=None):
         return read_glossary_definition(term)
 
     agent = create_agent(
-        model="ollama:qwen3.5",
+        model=model,
         tools=[
             get_hero_info,
             get_build_type_itemisation,
@@ -172,14 +172,17 @@ def _build_agent(data: GlobalData, system_prompt, response_format=None):
     return agent
 
 
-def build_agent(data: GlobalData):
-    return _build_agent(data, SYSTEM_PROMPT)
+def build_agent(data: GlobalData, model: str = "ollama:qwen3.5"):
+    return _build_agent(data, SYSTEM_PROMPT, model)
 
 
-def build_draft_agent(data: GlobalData):
-    return _build_agent(data, DRAFT_SYSTEM_PROMPT)
+def build_draft_agent(data: GlobalData, model: str = "ollama:qwen3.5"):
+    return _build_agent(data, DRAFT_SYSTEM_PROMPT, model)
 
-def build_formatter():
-    formatter = ChatOllama(model="qwen3.5")
-    return formatter
 
+def build_formatter(model="ollama:qwen3.5"):
+    chat_model = init_chat_model(model) if isinstance(model, str) else model
+    return chat_model.with_structured_output(
+        DraftRecommendationDecision,
+        method="json_schema",
+    )
