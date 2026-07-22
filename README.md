@@ -1,30 +1,27 @@
 # Lazy Esports Godfather
 
-The application runs entirely on your computer. FastAPI serves a static browser interface on
-`127.0.0.1`; graph scoring and saved data remain local.
+This branch contains the local game logic, persistence, draft scoring, and optional AI
+integrations for the command-line version of Lazy Esports Godfather. The previous browser and
+FastAPI interface are intentionally not included.
 
-## Run from source
+## Current entry point
 
 ```powershell
 py -m pip install -r requirements.txt
 py main.py
 ```
 
-The application opens `http://127.0.0.1:8765` in your default browser.
+The current entry point loads the shared game state and reports whether an AI model is configured.
+The interactive CLI will be built on top of these services.
 
-AI is optional. Without it, the coach is disabled and draft recommendations use deterministic
-graph scores. Use the in-app **Settings** page to select Ollama, OpenAI, Anthropic, or Google
-Gemini and enter the provider's model name.
+AI remains optional. Without it, draft recommendations use deterministic graph scores. The core
+supports Ollama, OpenAI, Anthropic, and Google Gemini.
 
-Cloud API keys entered in Settings are kept in memory for the current run and are not written to
-the settings JSON file. They can alternatively be supplied through `OPENAI_API_KEY`,
-`ANTHROPIC_API_KEY`, or `GOOGLE_API_KEY`. Ollama does not require an API key.
+Cloud API keys can be supplied through `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `GOOGLE_API_KEY`.
+Ollama does not require an API key. Provider and model settings remain in
+`data/user_data/model_settings.json` during CLI development.
 
-## Build the Windows application
+## Packaging
 
-```powershell
-pyinstaller --noconfirm --clean lazy_esports_godfather.spec
-```
-
-The distributable folder is created under `dist/Lazy Esports Godfather`. Packaged user data is
-stored in `%LOCALAPPDATA%/Lazy Esports Godfather`, outside the application directory.
+PyInstaller remains available for the eventual CLI build. Packaging will be updated after the
+interactive CLI is implemented.

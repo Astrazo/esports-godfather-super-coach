@@ -1,3 +1,22 @@
+"""State of the app.
+
+Raises:
+    ValueError: _description_
+    ValueError: _description_
+    ValueError: _description_
+    ValueError: _description_
+    ValueError: _description_
+    ValueError: _description_
+    ValueError: _description_
+    ValueError: _description_
+
+Returns:
+    _type_: _description_
+
+Yields:
+    _type_: _description_
+"""
+
 import copy
 import json
 import os
@@ -7,9 +26,9 @@ from threading import RLock
 from langchain.chat_models import init_chat_model
 from langchain.messages import AIMessageChunk
 
-from app.core.agent import build_agent, build_draft_agent, build_formatter
-from app.core.data import build_global_data
-from app.core.draft import (
+from core.agent import build_coach_agent, build_draft_agent, build_formatter
+from core.data import build_global_data
+from core.draft import (
     ban_hero,
     build_candidate_shortlist,
     build_draft_state,
@@ -18,9 +37,9 @@ from app.core.draft import (
     pick_hero,
     score_all_positions,
 )
-from app.core.graph import build_master_graph, confirm_hero_masteries
-from app.core.hero_mastery import POSITIONS, create_empty_masteries, set_mastery
-from app.core.persistence import (
+from core.graph import build_master_graph, confirm_hero_masteries
+from core.hero_mastery import POSITIONS, create_empty_masteries, set_mastery
+from core.persistence import (
     load_coach_messages,
     load_draft_order,
     load_model_settings,
@@ -114,20 +133,6 @@ class GameState:
 
         confirm_hero_masteries(self.graph, self.t1_masteries, self.t2_masteries)
 
-    def bootstrap_payload(self):
-        """Return the initial snapshot used to build the browser interface."""
-        return {
-            "positions": POSITIONS,
-            "heroes": sorted(self.data.hero_names),
-            "t1_masteries": self.t1_masteries,
-            "t2_masteries": self.t2_masteries,
-            "confirmed_t2_positions": sorted(self.confirmed_t2_positions),
-            "draft_order": self.draft_order,
-            "draft": self.draft_payload(),
-            "coach_messages": _visible_messages(self.coach_messages),
-            "ai": self.model_settings(),
-        }
-
     # Model configuration and optional AI services
 
     @property
@@ -207,11 +212,11 @@ class GameState:
         )
         return self.chat_model
 
-    def get_agent(self):
+    def _get_agent(self):
         if not self.ai_enabled:
             return None
         if self.agent is None:
-            self.agent = build_agent(self.data, self.get_chat_model())
+            self.agent = build_coach_agent(self.data, self.get_chat_model())
         return self.agent
 
     def get_draft_ai(self):
@@ -364,46 +369,7 @@ class GameState:
         scored = get_scored_candidate(position_scores, selected_hero, selected_position)
         self.draft_recommendation = {**scored, "analysis": analysis}
 
-    # Browser-facing views of the game state
-
-    def draft_payload(self):
-        draft = self.draft_state
-        if draft is None:
-            return None
-
-        complete = draft.current_step >= len(draft.draft_order)
-        payload = {
-            "player_side": draft.player_side,
-            "current_step": draft.current_step,
-            "total_steps": len(draft.draft_order),
-            "complete": complete,
-            "player_picks": _serialise_picks(draft.t1_picked),
-            "cpu_picks": _serialise_picks(draft.t2_picked),
-            "banned": sorted(draft.banned),
-            "recommendation": self.draft_recommendation,
-        }
-        if complete:
-            return payload
-
-        acting_side, action = draft.draft_order[draft.current_step]
-        team = "t1" if acting_side == draft.player_side else "t2"
-        if action == "Pick":
-            available = draft.t1_available if team == "t1" else draft.t2_available
-            available_by_position = {
-                position: sorted(available.get(position, set())) for position in POSITIONS
-            }
-        else:
-            heroes = set().union(*draft.t1_available.values(), *draft.t2_available.values())
-            available_by_position = {"all": sorted(heroes)}
-
-        payload["turn"] = {
-            "side": acting_side,
-            "action": action,
-            "is_player": acting_side == draft.player_side,
-            "team": team,
-            "available": available_by_position,
-        }
-        return payload
+    # Graph queries
 
     def graph_relationships(self, hero, relationship_types):
         if hero not in self.graph:
@@ -429,16 +395,18 @@ class GameState:
         completed = False
 
         try:
-            for part in self.get_agent().stream(
+            for part in self._get_agent().stream(
                 {"messages": self.coach_messages},
-                stream_mode=["messages", "values"],
+                stream_mode=["messages", "values"], 
                 version="v2",
             ):
+                # If a message (chunk), append the token and yield
                 if part["type"] == "messages":
                     token, _ = part["data"]
                     if isinstance(token, AIMessageChunk) and token.text:
                         streamed_text.append(token.text)
                         yield token.text
+                # Otherwise if it's value, add it to the final messages
                 elif part["type"] == "values":
                     final_messages = part["data"]["messages"]
 
@@ -494,14 +462,3 @@ def _serialise_agent_messages(messages):
                 }
             )
     return outputs
-
-
-def _visible_messages(messages):
-    visible = []
-    for message in messages:
-        role = message.get("role")
-        if role in {"human", "user"}:
-            visible.append({"role": "user", "content": message.get("content", "")})
-        elif role in {"ai", "assistant"} and not message.get("tool_calls"):
-            visible.append({"role": "assistant", "content": message.get("content", "")})
-    return visible

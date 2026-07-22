@@ -1,5 +1,11 @@
+"""Handles all things graph.
+
+Returns:
+    _type_: _description_
+"""
+
 import networkx as nx
-from app.core.data import GlobalData
+from core.data import GlobalData
 
 
 # Edge columns types

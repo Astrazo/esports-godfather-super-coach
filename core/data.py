@@ -1,3 +1,13 @@
+"""Handles extraction of data for agents
+
+Raises:
+    InvalidDataError: _description_
+    InvalidDataError: _description_
+
+Returns:
+    _type_: _description_
+"""
+
 from collections import defaultdict
 import csv
 from dataclasses import dataclass
@@ -22,7 +32,8 @@ class InvalidDataError(Exception):
     pass
 
 
-DATA_DIRECTORY = Path(__file__).resolve().parents[2] / "data"
+PROJECT_DIRECTORY = Path(__file__).resolve().parent.parent
+DATA_DIRECTORY = PROJECT_DIRECTORY / "data" / "core_data"
 HERO_INFO_DIRECTORY = DATA_DIRECTORY / "hero_info"
 ROLE_ITEMISATION_DIRECTORY = DATA_DIRECTORY / "role_itemisation"
 TEAM_COMP_DIRECTORY = DATA_DIRECTORY / "team_comp_approaches"
@@ -302,6 +313,16 @@ def _build_tag_hero_map(
 
 
 def _extract_markdown_section(markdown: str, heading: str, level: int = 1) -> str:
+    """Grabs data from a specific markdown section of some text.
+
+    Args:
+        markdown (str): _description_
+        heading (str): _description_
+        level (int, optional): _description_. Defaults to 1.
+
+    Returns:
+        str: _description_
+    """
     heading_marker = "#" * level
     target = f"{heading_marker} {heading}".casefold()
 

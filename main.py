@@ -1,7 +1,9 @@
-"""Local entry point for Lazy Esports Godfather."""
+"""Minimal entry point for the CLI branch."""
+from cli import run_cli
 
-from app.server import main
 
+def main():
+    run_cli()
 
 if __name__ == "__main__":
     main()

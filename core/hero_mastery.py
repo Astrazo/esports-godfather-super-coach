@@ -1,15 +1,27 @@
 POSITIONS = ["Top", "Jungler", "Mid", "Bot", "Support"]
 
-# Setup mastery functions.  This does not live on the graph
 def create_empty_masteries(G) -> dict[str, dict[str: int]]:
+    """Setup mastery structure.
+
+    Returns:
+        _type_: _description_
+    """
     return {hero: {position: 0 for position in G.nodes[hero]["tiers"]} for hero in G.nodes} # mastery can only exist where a tier exists
 
-# A function to create a structure to house enemy signiture heroes to help with the draft
-def create_empty_signitures() -> dict[str, set]: # position -> heroes
-    return {position: set() for position in POSITIONS}
-
-# Set the masterty of a hero
 def set_mastery(masteries: dict[str, dict[str: int]], hero: str, position: str, level: int):
+    """Set the mastery of a hero.
+
+    Args:
+        masteries (_type_): _description_
+        hero (str): _description_
+        position (str): _description_
+        level (int): _description_
+
+    Raises:
+        ValueError: _description_
+        ValueError: _description_
+        ValueError: _description_
+    """
     if hero not in masteries:
         raise ValueError(f"Unknown hero: {hero}")
 
@@ -22,6 +34,18 @@ def set_mastery(masteries: dict[str, dict[str: int]], hero: str, position: str, 
     masteries[hero][position] = level
 
 def increase_mastery(masteries: dict[str, dict[str: int]], hero: str, position: str):
+    """Function to increase the mastery of a hero by 1.
+
+    Args:
+        masteries (_type_): _description_
+        hero (str): _description_
+        position (str): _description_
+
+    Raises:
+        ValueError: _description_
+        ValueError: _description_
+        ValueError: _description_
+    """
     if hero not in masteries:
         raise ValueError(f"Unknown hero: {hero}")
 
@@ -35,6 +59,18 @@ def increase_mastery(masteries: dict[str, dict[str: int]], hero: str, position: 
     masteries[hero][position] += 1
 
 def decrease_mastery(masteries: dict[str, dict[str: int]], hero: str, position: str):
+    """Function to decrease the mastery of a hero by 1.
+
+    Args:
+        masteries (_type_): _description_
+        hero (str): _description_
+        position (str): _description_
+
+    Raises:
+        ValueError: _description_
+        ValueError: _description_
+        ValueError: _description_
+    """
     if hero not in masteries:
         raise ValueError(f"Unknown hero: {hero}")
 

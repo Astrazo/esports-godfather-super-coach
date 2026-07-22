@@ -1,8 +1,17 @@
+"""Hanldes all things draft.
+
+Raises:
+    ValueError: _description_
+
+Returns:
+    _type_: _description_
+"""
+
 import warnings
 from collections import defaultdict
 from dataclasses import dataclass
 
-from app.core.data import GlobalData
+from core.data import GlobalData
 
 
 @dataclass

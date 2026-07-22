@@ -6,7 +6,7 @@ from langchain.chat_models import init_chat_model
 from langchain.tools import tool
 from pydantic import BaseModel, Field
 
-from app.core.data import (
+from core.data import (
     GlobalData,
     read_attribute_info,
     read_build_type_itemisation,
@@ -15,8 +15,8 @@ from app.core.data import (
     read_team_comp_info,
 )
 
-PROJECT_DIRECTORY = Path(__file__).resolve().parents[2]
-PROMPTS_DIRECTORY = PROJECT_DIRECTORY / "app" / "prompts"
+PROJECT_DIRECTORY = Path(__file__).resolve().parent.parent
+PROMPTS_DIRECTORY = PROJECT_DIRECTORY / "data" / "core_data" / "prompts"
 
 COACH_SYSTEM_PROMPT_FILE = PROMPTS_DIRECTORY / "coach_system_prompt.md"
 COACH_SYSTEM_PROMPT = COACH_SYSTEM_PROMPT_FILE.read_text(encoding="utf-8")
@@ -38,9 +38,20 @@ class DraftRecommendationDecision(BaseModel):
 
 
 def _build_agent(data: GlobalData, system_prompt, model: str, response_format=None):
+    """Build an agent with tools.
+
+    Args:
+        data (GlobalData): _description_
+        system_prompt (_type_): _description_
+        model (str): _description_
+        response_format (_type_, optional): _description_. Defaults to None.
+
+    Returns:
+        _type_: _description_
+    """
     @tool
     def get_hero_best_positions(hero_name: str) -> str:
-        """Return the position suitabiliy for the requested hero for the requested tier.
+        """Get the position suitabiliy for the requested hero for the requested tier.
 
         Args:
             hero_name (str): the name of the hero you want to check
@@ -57,7 +68,7 @@ def _build_agent(data: GlobalData, system_prompt, model: str, response_format=No
         position_name: Literal["Top", "Jungler", "Mid", "Bot", "Support"],
         tier: Literal[1, 2, 3, 4, 5] = 5,
     ) -> str:
-        """Return heroes whose tier for the given position matches the requested tier.
+        """Get heroes whose tier for the given position matches the requested tier.
 
         Args:
             position_name (str): the name of the position you want to check.
@@ -175,11 +186,29 @@ def _build_agent(data: GlobalData, system_prompt, model: str, response_format=No
     return agent
 
 
-def build_agent(data: GlobalData, model: str = "ollama:qwen3.5"):
+def build_coach_agent(data: GlobalData, model: str = "ollama:qwen3.5"):
+    """Function to build a coach agent.
+
+    Args:
+        data (GlobalData): _description_
+        model (_type_, optional): _description_. Defaults to "ollama:qwen3.5".
+
+    Returns:
+        _type_: _description_
+    """
     return _build_agent(data, COACH_SYSTEM_PROMPT, model)
 
 
 def build_draft_agent(data: GlobalData, model: str = "ollama:qwen3.5"):
+    """Function to build a draft agent.
+
+    Args:
+        data (GlobalData): _description_
+        model (_type_, optional): _description_. Defaults to "ollama:qwen3.5".
+
+    Returns:
+        _type_: _description_
+    """
     return _build_agent(data, DRAFT_SYSTEM_PROMPT, model)
 
 

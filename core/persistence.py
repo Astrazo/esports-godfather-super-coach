@@ -13,7 +13,8 @@ def _user_data_directory():
         local_app_data = Path(os.getenv("LOCALAPPDATA", Path.home()))
         return local_app_data / "Lazy Esports Godfather"
 
-    return Path(__file__).resolve().parents[2] / "user_data"
+    project_directory = Path(__file__).resolve().parent.parent
+    return project_directory / "data" / "user_data"
 
 
 USER_DATA_DIRECTORY = _user_data_directory()
