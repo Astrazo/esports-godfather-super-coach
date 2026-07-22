@@ -78,7 +78,11 @@ nav { display: grid; gap: 6px; }
 .status { position: absolute; bottom: 22px; left: 26px; color: var(--muted); font-size: 13px; }
 .status .dot { color: var(--good); }
 
-main { max-width: 1280px; margin-left: 220px; padding: 42px 48px 80px; }
+main {
+  width: calc(100% - 220px);
+  margin-left: 220px;
+  padding: 42px 48px 80px;
+}
 .page { display: none; }
 .page.active { display: block; }
 .page-heading, .toolbar, .row, .draft-header { display: flex; gap: 16px; align-items: center; }
@@ -175,11 +179,19 @@ main { max-width: 1280px; margin-left: 220px; padding: 42px 48px 80px; }
 .order-step { padding: 7px 10px; border-radius: 7px; background: var(--panel-2); }
 .order-builder { display: flex; flex-wrap: wrap; gap: 10px; }
 
-.chat-messages { display: grid; gap: 12px; min-height: 280px; margin: 24px 0; }
-.message { max-width: 78%; padding: 12px 15px; border-radius: 12px; white-space: pre-wrap; }
-.message.user { justify-self: end; background: #27446a; }
-.message.assistant { justify-self: start; background: var(--panel-2); }
-.chat-form { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
+#page-coach.active {
+  display: flex;
+  min-height: calc(100vh - 122px);
+  flex-direction: column;
+}
+.coach-chat-shell {
+  width: 100%;
+  max-width: 900px;
+  flex: none;
+  align-self: center;
+  margin: auto;
+}
+#coach-chat { display: block; width: 100%; height: 110px; }
 
 .team-picks { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
 .team-picks .card { margin: 0; }
@@ -199,7 +211,16 @@ details { margin: 18px 0; }
   .sidebar { position: static; width: auto; border-right: 0; border-bottom: 1px solid var(--border); }
   .sidebar nav { grid-template-columns: repeat(6, 1fr); overflow-x: auto; }
   .status { position: static; margin: 16px 10px 0; }
-  main { margin-left: 0; padding: 28px 20px 60px; }
+  main { width: 100%; margin-left: 0; padding: 28px 20px 60px; }
   .mastery-grid, .hero-grid { grid-template-columns: repeat(2, 1fr); }
   .mastery-controls, .hero-toolbar { grid-template-columns: 1fr; }
+  #page-coach.active { min-height: calc(100vh - 210px); }
+  .coach-chat-shell { max-height: none; }
+}
+
+@media (max-width: 560px) {
+  main { padding: 22px 14px 40px; }
+  .page-heading { align-items: stretch; flex-direction: column; }
+  .page-heading button { width: 100%; }
+  .coach-chat-shell { margin: 16px 0 0; }
 }

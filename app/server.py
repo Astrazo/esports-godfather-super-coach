@@ -1,3 +1,6 @@
+"""Local HTTP boundary between the browser interface and Python game state."""
+
+import json
 import threading
 import webbrowser
 from contextlib import asynccontextmanager
@@ -6,30 +9,30 @@ from typing import Annotated
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from core.hero_mastery import POSITIONS
-from core.persistence import save_coach_messages, save_draft_order
-from web.state import AppState
+from app.backend.state import GameState
+from app.core.hero_mastery import POSITIONS
 
-APP_DIRECTORY = Path(__file__).resolve().parent
-STATIC_DIRECTORY = APP_DIRECTORY / "web" / "static"
+PROJECT_DIRECTORY = Path(__file__).resolve().parent.parent
+STATIC_DIRECTORY = PROJECT_DIRECTORY / "app" / "frontend" / "static"
 RELATIONSHIP_TYPES = ["synergy", "counter", "countered_by", "anti_synergy"]
 
-
+# -----------------------------------------------------------------------------
+# Server Config
+# -----------------------------------------------------------------------------
 @asynccontextmanager
 async def lifespan(app):
-    app.state.game = AppState()
+    # Authoritative state object for the app.
+    app.state.game = GameState()
     yield
 
-
+# Setup server
 app = FastAPI(
     title="Lazy Esports Godfather",
-    docs_url=None,
-    redoc_url=None,
     lifespan=lifespan,
 )
 app.add_middleware(
@@ -39,27 +42,23 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory=STATIC_DIRECTORY), name="static")
 
 
+# Pydantic models for updates
 class MasteryUpdate(BaseModel):
     position: str
     levels: dict[str, int]
 
-
 class DraftOrderUpdate(BaseModel):
     steps: list[tuple[str, str]]
 
-
 class StartDraftRequest(BaseModel):
     player_side: str
-
 
 class DraftActionRequest(BaseModel):
     hero: str
     position: str | None = None
 
-
 class CoachRequest(BaseModel):
     message: str = Field(min_length=1, max_length=10_000)
-
 
 class ModelSettingsUpdate(BaseModel):
     provider: str
@@ -68,33 +67,26 @@ class ModelSettingsUpdate(BaseModel):
     api_key: str = ""
 
 
+# -----------------------------------------------------------------------------
+# Frontend and initial application data
+# -----------------------------------------------------------------------------
+
+# Index
 @app.get("/")
 def index():
     return FileResponse(STATIC_DIRECTORY / "index.html")
 
-
+# Bootstrap
 @app.get("/api/bootstrap")
 def bootstrap():
     game = app.state.game
     with game.lock:
-        return {
-            "positions": POSITIONS,
-            "heroes": sorted(game.data.hero_names),
-            "t1_masteries": game.t1_masteries,
-            "t2_masteries": game.t2_masteries,
-            "confirmed_t2_positions": sorted(game.confirmed_t2_positions),
-            "draft_order": game.draft_order,
-            "draft": game.draft_payload(),
-            "coach_messages": _visible_messages(game.coach_messages),
-            "ai": game.model_settings(),
-        }
+        return game.bootstrap_payload()
 
 
-@app.get("/api/settings/model")
-def get_model_settings():
-    game = app.state.game
-    with game.lock:
-        return game.model_settings()
+# -----------------------------------------------------------------------------
+# Settings
+# -----------------------------------------------------------------------------
 
 
 @app.put("/api/settings/model")
@@ -112,6 +104,10 @@ def update_model_settings(update: ModelSettingsUpdate):
         raise HTTPException(400, str(error)) from error
 
 
+# -----------------------------------------------------------------------------
+# Team masteries
+# -----------------------------------------------------------------------------
+
 @app.put("/api/masteries/{team}")
 def update_masteries(team: str, update: MasteryUpdate):
     if team not in {"t1", "t2"}:
@@ -122,14 +118,14 @@ def update_masteries(team: str, update: MasteryUpdate):
     game = app.state.game
     try:
         with game.lock:
-            game.set_masteries(team, update.position, update.levels)
-            return {
-                "masteries": game.t1_masteries if team == "t1" else game.t2_masteries,
-                "confirmed_t2_positions": sorted(game.confirmed_t2_positions),
-            }
+            return game.set_masteries(team, update.position, update.levels)
     except ValueError as error:
         raise HTTPException(400, str(error)) from error
 
+
+# -----------------------------------------------------------------------------
+# Master graph
+# -----------------------------------------------------------------------------
 
 @app.get("/api/graph/{hero}")
 def graph_relationships(
@@ -152,6 +148,10 @@ def graph_relationships(
         raise HTTPException(404, str(error)) from error
 
 
+# -----------------------------------------------------------------------------
+# Draft order and draft actions
+# -----------------------------------------------------------------------------
+
 @app.put("/api/draft-order")
 def update_draft_order(update: DraftOrderUpdate):
     if not update.steps:
@@ -162,9 +162,8 @@ def update_draft_order(update: DraftOrderUpdate):
 
     game = app.state.game
     with game.lock:
-        game.draft_order = update.steps
-        save_draft_order(game.draft_order)
-        return {"draft_order": game.draft_order}
+        draft_order = game.set_draft_order(update.steps)
+        return {"draft_order": draft_order}
 
 
 @app.post("/api/draft/start")
@@ -175,13 +174,6 @@ def start_draft(request: StartDraftRequest):
     game = app.state.game
     with game.lock:
         game.start_draft(request.player_side)
-        return game.draft_payload()
-
-
-@app.get("/api/draft")
-def get_draft():
-    game = app.state.game
-    with game.lock:
         return game.draft_payload()
 
 
@@ -215,6 +207,10 @@ def end_draft():
         return {"ok": True}
 
 
+# -----------------------------------------------------------------------------
+# Coach
+# -----------------------------------------------------------------------------
+
 @app.post("/api/coach")
 def send_coach_message(request: CoachRequest):
     game = app.state.game
@@ -224,69 +220,27 @@ def send_coach_message(request: CoachRequest):
             "No AI model is configured. The graph and draft tools remain available.",
         )
 
-    with game.lock:
-        game.coach_messages.append({"role": "user", "content": request.message.strip()})
-        save_coach_messages(game.coach_messages)
-
+    def stream_response():
         try:
-            result = game.get_agent().invoke({"messages": game.coach_messages})
-            game.coach_messages = _serialise_agent_messages(result["messages"])
-            save_coach_messages(game.coach_messages)
+            with game.lock:
+                for text in game.stream_coach_message(request.message):
+                    yield json.dumps({"text": text}) + "\n"
         except Exception as error:
-            raise HTTPException(502, f"The coach could not respond: {error}") from error
+            yield json.dumps({"error": f"The coach could not respond: {error}"}) + "\n"
 
-        visible_messages = _visible_messages(game.coach_messages)
-        return {"message": visible_messages[-1], "messages": visible_messages}
+    return StreamingResponse(
+        stream_response(),
+        media_type="application/x-ndjson",
+        headers={"Cache-Control": "no-cache"},
+    )
 
 
 @app.delete("/api/coach")
 def clear_coach():
     game = app.state.game
     with game.lock:
-        game.coach_messages = []
-        save_coach_messages([])
+        game.clear_coach_messages()
         return {"ok": True}
-
-
-def _serialise_agent_messages(messages):
-    outputs = []
-    for message in messages:
-        if message.type == "human":
-            outputs.append({"role": "human", "content": str(message.text)})
-        elif message.type == "ai":
-            output = {"role": "ai", "content": str(message.text)}
-            if message.tool_calls:
-                output["tool_calls"] = [
-                    {
-                        "id": tool_call["id"],
-                        "name": tool_call["name"],
-                        "args": tool_call["args"],
-                        "type": "tool_call",
-                    }
-                    for tool_call in message.tool_calls
-                ]
-            outputs.append(output)
-        elif message.type == "tool":
-            outputs.append(
-                {
-                    "role": "tool",
-                    "content": str(message.text),
-                    "tool_call_id": message.tool_call_id,
-                    "name": message.name,
-                }
-            )
-    return outputs
-
-
-def _visible_messages(messages):
-    visible = []
-    for message in messages:
-        role = message.get("role")
-        if role in {"human", "user"}:
-            visible.append({"role": "user", "content": message.get("content", "")})
-        elif role in {"ai", "assistant"} and not message.get("tool_calls"):
-            visible.append({"role": "assistant", "content": message.get("content", "")})
-    return visible
 
 
 def main():
@@ -294,7 +248,3 @@ def main():
     port = 8765
     threading.Timer(1.0, lambda: webbrowser.open(f"http://{host}:{port}")).start()
     uvicorn.run(app, host=host, port=port)
-
-
-if __name__ == "__main__":
-    main()

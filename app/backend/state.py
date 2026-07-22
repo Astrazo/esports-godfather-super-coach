@@ -5,10 +5,11 @@ from collections import defaultdict
 from threading import RLock
 
 from langchain.chat_models import init_chat_model
+from langchain.messages import AIMessageChunk
 
-from core.agent import build_agent, build_draft_agent, build_formatter
-from core.data import build_global_data
-from core.draft import (
+from app.core.agent import build_agent, build_draft_agent, build_formatter
+from app.core.data import build_global_data
+from app.core.draft import (
     ban_hero,
     build_candidate_shortlist,
     build_draft_state,
@@ -17,13 +18,15 @@ from core.draft import (
     pick_hero,
     score_all_positions,
 )
-from core.graph import build_master_graph, confirm_hero_masteries
-from core.hero_mastery import POSITIONS, create_empty_masteries, set_mastery
-from core.persistence import (
+from app.core.graph import build_master_graph, confirm_hero_masteries
+from app.core.hero_mastery import POSITIONS, create_empty_masteries, set_mastery
+from app.core.persistence import (
     load_coach_messages,
     load_draft_order,
     load_model_settings,
     load_t1_masteries,
+    save_coach_messages,
+    save_draft_order,
     save_model_settings,
     save_t1_masteries,
 )
@@ -79,8 +82,8 @@ PROVIDERS = {
 }
 
 
-class AppState:
-    """Own the state for the one local user of the application."""
+class GameState:
+    """Own all authoritative state for the one local user of the application."""
 
     def __init__(self):
         self.lock = RLock()
@@ -110,6 +113,22 @@ class AppState:
         self.formatter = None
 
         confirm_hero_masteries(self.graph, self.t1_masteries, self.t2_masteries)
+
+    def bootstrap_payload(self):
+        """Return the initial snapshot used to build the browser interface."""
+        return {
+            "positions": POSITIONS,
+            "heroes": sorted(self.data.hero_names),
+            "t1_masteries": self.t1_masteries,
+            "t2_masteries": self.t2_masteries,
+            "confirmed_t2_positions": sorted(self.confirmed_t2_positions),
+            "draft_order": self.draft_order,
+            "draft": self.draft_payload(),
+            "coach_messages": _visible_messages(self.coach_messages),
+            "ai": self.model_settings(),
+        }
+
+    # Model configuration and optional AI services
 
     @property
     def ai_enabled(self):
@@ -213,6 +232,8 @@ class AppState:
             return os.getenv("GOOGLE_API_KEY", "") or os.getenv("GEMINI_API_KEY", "")
         return os.getenv(variable, "")
 
+    # Team masteries and draft lifecycle
+
     def set_masteries(self, team, position, levels):
         masteries = self.t1_masteries if team == "t1" else self.t2_masteries
         for hero, level in levels.items():
@@ -224,6 +245,16 @@ class AppState:
             self.confirmed_t2_positions.add(position)
 
         confirm_hero_masteries(self.graph, self.t1_masteries, self.t2_masteries)
+
+        return {
+            "masteries": self.t1_masteries if team == "t1" else self.t2_masteries,
+            "confirmed_t2_positions": sorted(self.confirmed_t2_positions),
+        }
+
+    def set_draft_order(self, steps):
+        self.draft_order = steps
+        save_draft_order(self.draft_order)
+        return self.draft_order
 
     def start_draft(self, player_side):
         confirm_hero_masteries(self.graph, self.t1_masteries, self.t2_masteries)
@@ -333,6 +364,8 @@ class AppState:
         scored = get_scored_candidate(position_scores, selected_hero, selected_position)
         self.draft_recommendation = {**scored, "analysis": analysis}
 
+    # Browser-facing views of the game state
+
     def draft_payload(self):
         draft = self.draft_state
         if draft is None:
@@ -385,6 +418,44 @@ class AppState:
             relationship_type: sorted(targets) for relationship_type, targets in grouped.items()
         }
 
+    # Coach conversation
+
+    def stream_coach_message(self, message):
+        self.coach_messages.append({"role": "user", "content": message.strip()})
+        save_coach_messages(self.coach_messages)
+
+        final_messages = None
+        streamed_text = []
+        completed = False
+
+        try:
+            for part in self.get_agent().stream(
+                {"messages": self.coach_messages},
+                stream_mode=["messages", "values"],
+                version="v2",
+            ):
+                if part["type"] == "messages":
+                    token, _ = part["data"]
+                    if isinstance(token, AIMessageChunk) and token.text:
+                        streamed_text.append(token.text)
+                        yield token.text
+                elif part["type"] == "values":
+                    final_messages = part["data"]["messages"]
+
+            completed = True
+        finally:
+            if completed and final_messages is not None:
+                self.coach_messages = _serialise_agent_messages(final_messages)
+            elif streamed_text:
+                self.coach_messages.append(
+                    {"role": "ai", "content": "".join(streamed_text)}
+                )
+            save_coach_messages(self.coach_messages)
+
+    def clear_coach_messages(self):
+        self.coach_messages = []
+        save_coach_messages([])
+
     def _require_draft(self):
         if self.draft_state is None:
             raise ValueError("No draft is currently active.")
@@ -393,3 +464,44 @@ class AppState:
 
 def _serialise_picks(picks):
     return {hero: sorted(positions) for hero, positions in picks.items()}
+
+
+def _serialise_agent_messages(messages):
+    outputs = []
+    for message in messages:
+        if message.type == "human":
+            outputs.append({"role": "human", "content": str(message.text)})
+        elif message.type == "ai":
+            output = {"role": "ai", "content": str(message.text)}
+            if message.tool_calls:
+                output["tool_calls"] = [
+                    {
+                        "id": tool_call["id"],
+                        "name": tool_call["name"],
+                        "args": tool_call["args"],
+                        "type": "tool_call",
+                    }
+                    for tool_call in message.tool_calls
+                ]
+            outputs.append(output)
+        elif message.type == "tool":
+            outputs.append(
+                {
+                    "role": "tool",
+                    "content": str(message.text),
+                    "tool_call_id": message.tool_call_id,
+                    "name": message.name,
+                }
+            )
+    return outputs
+
+
+def _visible_messages(messages):
+    visible = []
+    for message in messages:
+        role = message.get("role")
+        if role in {"human", "user"}:
+            visible.append({"role": "user", "content": message.get("content", "")})
+        elif role in {"ai", "assistant"} and not message.get("tool_calls"):
+            visible.append({"role": "assistant", "content": message.get("content", "")})
+    return visible

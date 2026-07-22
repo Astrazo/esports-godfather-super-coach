@@ -6,7 +6,7 @@ from langchain.chat_models import init_chat_model
 from langchain.tools import tool
 from pydantic import BaseModel, Field
 
-from core.data import (
+from app.core.data import (
     GlobalData,
     read_attribute_info,
     read_build_type_itemisation,
@@ -15,10 +15,13 @@ from core.data import (
     read_team_comp_info,
 )
 
-SYSTEM_PROMPT_FILE = Path(__file__).resolve().parent.parent / "system_prompt.md"
-SYSTEM_PROMPT = SYSTEM_PROMPT_FILE.read_text(encoding="utf-8")
+PROJECT_DIRECTORY = Path(__file__).resolve().parents[2]
+PROMPTS_DIRECTORY = PROJECT_DIRECTORY / "app" / "prompts"
 
-DRAFT_SYSTEM_PROMPT_FILE = Path(__file__).resolve().parent.parent / "draft_system_prompt.md"
+COACH_SYSTEM_PROMPT_FILE = PROMPTS_DIRECTORY / "coach_system_prompt.md"
+COACH_SYSTEM_PROMPT = COACH_SYSTEM_PROMPT_FILE.read_text(encoding="utf-8")
+
+DRAFT_SYSTEM_PROMPT_FILE = PROMPTS_DIRECTORY / "draft_system_prompt.md"
 DRAFT_SYSTEM_PROMPT = DRAFT_SYSTEM_PROMPT_FILE.read_text(encoding="utf-8")
 
 
@@ -173,7 +176,7 @@ def _build_agent(data: GlobalData, system_prompt, model: str, response_format=No
 
 
 def build_agent(data: GlobalData, model: str = "ollama:qwen3.5"):
-    return _build_agent(data, SYSTEM_PROMPT, model)
+    return _build_agent(data, COACH_SYSTEM_PROMPT, model)
 
 
 def build_draft_agent(data: GlobalData, model: str = "ollama:qwen3.5"):

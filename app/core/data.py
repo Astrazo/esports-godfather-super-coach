@@ -22,7 +22,7 @@ class InvalidDataError(Exception):
     pass
 
 
-DATA_DIRECTORY = Path(__file__).parent.parent / "data"
+DATA_DIRECTORY = Path(__file__).resolve().parents[2] / "data"
 HERO_INFO_DIRECTORY = DATA_DIRECTORY / "hero_info"
 ROLE_ITEMISATION_DIRECTORY = DATA_DIRECTORY / "role_itemisation"
 TEAM_COMP_DIRECTORY = DATA_DIRECTORY / "team_comp_approaches"

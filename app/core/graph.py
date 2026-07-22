@@ -1,5 +1,5 @@
 import networkx as nx
-from core.data import GlobalData
+from app.core.data import GlobalData
 
 
 # Edge columns types

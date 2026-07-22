@@ -7,7 +7,7 @@ The application runs entirely on your computer. FastAPI serves a static browser 
 
 ```powershell
 py -m pip install -r requirements.txt
-py app.py
+py main.py
 ```
 
 The application opens `http://127.0.0.1:8765` in your default browser.
