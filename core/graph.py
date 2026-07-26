@@ -39,16 +39,16 @@ def build_master_graph(data: GlobalData) -> nx.MultiDiGraph:
     # Make a node for every hero
     G_master.add_nodes_from(hero_names)
 
-    # Add the position tier data
+    # Add the position tier data (copy, so do not mutate hero_tiers at runtime)
     nx.set_node_attributes(G_master, hero_tiers, name="tiers")
 
     # Build relationship edges
     for _, row in hero_relationships.iterrows():
         hero = row["Name"]
         for col, edge_type in EDGE_TYPES.items():
-            targets = resolve_tags(str(row[col]), tag_hero_map, hero_names)
+            targets = _resolve_tags(str(row[col]), tag_hero_map, hero_names)
             for target in targets:
-                if target == hero:
+                if target == hero: # skip self (in case they counter themselves for example)
                     continue
                 G_master.add_edge(hero, target, type=edge_type)
 
@@ -84,8 +84,9 @@ def build_match_graph(G, team_a_available, team_b_available):
     return G.subgraph(all_available).copy()
 
 # Resolve tags
-def resolve_tags(raw: str, tag_hero_map: dict[str, list[str]], hero_names: set[str]) -> list[str]:
-    """_summary_
+def _resolve_tags(raw: str, tag_hero_map: dict[str, list[str]], hero_names: set[str]) -> list[str]:
+    """Resolve tags into hero names so relationship edges can be added.
+    E.g. a hero counters squishy heroes -> deep space, Lan, etc.
 
     Args:
         raw (str): _description_

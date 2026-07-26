@@ -1,7 +1,7 @@
 POSITIONS = ["Top", "Jungler", "Mid", "Bot", "Support"]
 
-def create_empty_masteries(G) -> dict[str, dict[str: int]]:
-    """Setup mastery structure.
+def create_default_masteries(G) -> dict[str, dict[str: int]]:
+    """For each node in the graph, set each playable position to 0 mastery.
 
     Returns:
         _type_: _description_

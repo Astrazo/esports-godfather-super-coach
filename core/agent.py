@@ -2,7 +2,9 @@ from pathlib import Path
 from typing import Literal
 
 from langchain.agents import create_agent
-from langchain.chat_models import init_chat_model
+from langgraph.graph.state import CompiledStateGraph
+from langchain_core.runnables import Runnable
+from langchain.chat_models import init_chat_model, BaseChatModel
 from langchain.tools import tool
 from pydantic import BaseModel, Field
 
@@ -37,7 +39,7 @@ class DraftRecommendationDecision(BaseModel):
     )
 
 
-def _build_agent(data: GlobalData, system_prompt, model: str, response_format=None):
+def _build_agent(data: GlobalData, system_prompt, model: str, response_format=None) -> CompiledStateGraph:
     """Build an agent with tools.
 
     Args:
@@ -47,7 +49,7 @@ def _build_agent(data: GlobalData, system_prompt, model: str, response_format=No
         response_format (_type_, optional): _description_. Defaults to None.
 
     Returns:
-        _type_: _description_
+        CompiledStateGraph: an agent object supporting .invoke() and .stream()
     """
     @tool
     def get_hero_best_positions(hero_name: str) -> str:
@@ -185,36 +187,56 @@ def _build_agent(data: GlobalData, system_prompt, model: str, response_format=No
 
     return agent
 
-
-def build_coach_agent(data: GlobalData, model: str = "ollama:qwen3.5"):
-    """Function to build a coach agent.
+def build_chat_model(provider: str, model: str, options: dict):
+    """Build a lanchain instance of the requested chat model.
 
     Args:
-        data (GlobalData): _description_
-        model (_type_, optional): _description_. Defaults to "ollama:qwen3.5".
+        provider (str): provider of the model.
+        model (str): name of the model.
+        options (dict): _description_
 
     Returns:
         _type_: _description_
+    """
+    return init_chat_model(model=model, model_provider=provider, **options)
+
+
+def build_coach_agent(data: GlobalData, model: str) -> CompiledStateGraph:
+    """Build a coach agent langchain object.
+
+    Args:
+        data (GlobalData): _description_
+        model (_type_, optional): _description_.
+
+    Returns:
+        CompiledStateGraph: an agent object supporting .invoke() and .stream()
     """
     return _build_agent(data, COACH_SYSTEM_PROMPT, model)
 
 
-def build_draft_agent(data: GlobalData, model: str = "ollama:qwen3.5"):
-    """Function to build a draft agent.
+def build_draft_agent(data: GlobalData, model: str) -> CompiledStateGraph:
+    """Build a draft agent langchain object.
 
     Args:
         data (GlobalData): _description_
-        model (_type_, optional): _description_. Defaults to "ollama:qwen3.5".
+        model (_type_, optional): _description_.
 
     Returns:
-        _type_: _description_
+        CompiledStateGraph: an agent object supporting .invoke() and .stream()
     """
     return _build_agent(data, DRAFT_SYSTEM_PROMPT, model)
 
 
-def build_formatter(model="ollama:qwen3.5"):
-    chat_model = init_chat_model(model) if isinstance(model, str) else model
-    return chat_model.with_structured_output(
+def build_formatter(model: BaseChatModel) -> Runnable:
+    """Generate a formatter version of a built chat model object.
+
+    Args:
+        model (BaseChatModel): a built langchain chat model object.
+
+    Returns:
+        Runnable: a built langchain chat model object with a defined output schema
+    """
+    return model.with_structured_output(
         DraftRecommendationDecision,
         method="json_schema",
     )

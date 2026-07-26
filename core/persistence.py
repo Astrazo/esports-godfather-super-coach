@@ -4,15 +4,12 @@ import sys
 from pathlib import Path
 
 
-def _user_data_directory():
-    configured_directory = os.getenv("LEG_USER_DATA")
-    if configured_directory:
-        return Path(configured_directory).expanduser()
+def _user_data_directory() -> Path:
+    """Get user data directory path.
 
-    if getattr(sys, "frozen", False):
-        local_app_data = Path(os.getenv("LOCALAPPDATA", Path.home()))
-        return local_app_data / "Lazy Esports Godfather"
-
+    Returns:
+        Path: user data directory path.
+    """
     project_directory = Path(__file__).resolve().parent.parent
     return project_directory / "data" / "user_data"
 
@@ -51,14 +48,10 @@ def save_t1_masteries(masteries):
     _write_json(T1_MASTERIES_FILE, masteries)
 
 
-def load_coach_messages():
+def load_coach_messages() -> list[dict[str, str|list]]:
     saved_messages = _read_json(COACH_MESSAGES_FILE, [])
     if not isinstance(saved_messages, list):
         return []
-
-    if not isinstance(saved_messages, list):
-        return []
-
     return saved_messages
 
 
@@ -76,7 +69,7 @@ def load_draft_order(default_order):
         if (
             not isinstance(step, list)
             or len(step) != 2
-            or step[0] not in {"blue", "red", "t1", "t2"}
+            or step[0] not in {"Blue", "Red"}
             or step[1] not in {"Pick", "Ban"}
         ):
             return default_order.copy()
@@ -86,21 +79,36 @@ def load_draft_order(default_order):
 
     return draft_order
 
-
 def save_draft_order(draft_order):
     _write_json(DRAFT_ORDER_FILE, draft_order)
 
-
 def load_model_settings():
+    """Read model settings from the .json file.
+
+    Returns:
+        dict: dictionary with model settings
+    """
     settings = _read_json(MODEL_SETTINGS_FILE, {})
     return settings if isinstance(settings, dict) else {}
 
+def save_model_settings(settings: dict[str,str]):
+    """Save model settings to the .json file.
 
-def save_model_settings(settings):
+    Args:
+        settings (dict): a dictionary containing the model setup settings.
+    """
     _write_json(MODEL_SETTINGS_FILE, settings)
 
-
 def _read_json(path, default):
+    """A helper function for taking a json file and converting to dict for reading.
+
+    Args:
+        path (Path): path in which to save the json to
+        value (dict): the default value to return if an issue is encouterered reading the file
+
+    Returns:
+        dict: dictionay of data converted from json
+    """
     if not path.exists():
         return default
 
@@ -111,10 +119,17 @@ def _read_json(path, default):
         return default
 
 
-def _write_json(path, value):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary_path = path.with_suffix(f"{path.suffix}.tmp")
+def _write_json(path: Path, value: dict[str,str]):
+    """A helper function for taking a dict and converting to json for storage.
 
+    Args:
+        path (Path): path in which to save the json to
+        value (dict): data to save in dictionary form
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Atomic write
+    temporary_path = path.with_suffix(f"{path.suffix}.tmp")
     with temporary_path.open("w", encoding="utf-8") as file:
         json.dump(value, file, indent=2, ensure_ascii=False)
         file.write("\n")

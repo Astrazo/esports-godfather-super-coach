@@ -1,6 +1,5 @@
 """Minimal entry point for the CLI branch."""
-from cli import run_cli
-
+from cli.main_menu import run_cli
 
 def main():
     run_cli()

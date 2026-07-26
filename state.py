@@ -21,12 +21,10 @@ import copy
 import json
 import os
 from collections import defaultdict
-from threading import RLock
 
-from langchain.chat_models import init_chat_model
 from langchain.messages import AIMessageChunk
 
-from core.agent import build_coach_agent, build_draft_agent, build_formatter
+from core.agent import build_chat_model, build_coach_agent, build_draft_agent, build_formatter
 from core.data import build_global_data
 from core.draft import (
     ban_hero,
@@ -38,7 +36,7 @@ from core.draft import (
     score_all_positions,
 )
 from core.graph import build_master_graph, confirm_hero_masteries
-from core.hero_mastery import POSITIONS, create_empty_masteries, set_mastery
+from core.hero_mastery import POSITIONS, create_default_masteries, set_mastery
 from core.persistence import (
     load_coach_messages,
     load_draft_order,
@@ -76,25 +74,25 @@ DEFAULT_DRAFT_ORDER = [
 PROVIDERS = {
     "ollama": {
         "label": "Ollama",
-        "api_key_environment": None,
+        "api_key_env_vars": (),
         "default_model": "qwen3.5",
         "supports_base_url": True,
     },
     "openai": {
         "label": "OpenAI",
-        "api_key_environment": "OPENAI_API_KEY",
+        "api_key_env_vars": ("OPENAI_API_KEY",),
         "default_model": "gpt-5-mini",
         "supports_base_url": True,
     },
     "anthropic": {
         "label": "Anthropic",
-        "api_key_environment": "ANTHROPIC_API_KEY",
+        "api_key_env_vars": ("ANTHROPIC_API_KEY",),
         "default_model": "claude-sonnet-4-6",
-        "supports_base_url": False,
+        "supports_base_url": True,
     },
     "google_genai": {
         "label": "Google Gemini",
-        "api_key_environment": "GOOGLE_API_KEY",
+        "api_key_env_vars": ("GOOGLE_API_KEY", "GEMINI_API_KEY"),
         "default_model": "gemini-2.5-flash",
         "supports_base_url": False,
     },
@@ -105,54 +103,73 @@ class GameState:
     """Own all authoritative state for the one local user of the application."""
 
     def __init__(self):
-        self.lock = RLock()
+        """
+        Build graph, 
+        Build and load masteries (apply to graph), 
+        Load coach messages, 
+        Grab data to configure model
+        """
+        # Init data and build the graph from it
         self.data = build_global_data()
         self.default_graph = build_master_graph(self.data)
         self.graph = copy.deepcopy(self.default_graph)
 
-        empty_masteries = create_empty_masteries(self.graph)
+        # Setup masteries and apply to the graph
+        empty_masteries = create_default_masteries(self.graph)
         self.t1_masteries = load_t1_masteries(empty_masteries)
-        self.t2_masteries = create_empty_masteries(self.graph)
-        self.confirmed_t2_positions = set()
+        self.t2_masteries = create_default_masteries(self.graph)
+        confirm_hero_masteries(self.graph, self.t1_masteries, self.t2_masteries)
+
+        # Setup draft data
+        self.confirmed_t2_positions = set() # so confirmed positions aren't suggested
         self.draft_order = load_draft_order(DEFAULT_DRAFT_ORDER)
         self.draft_state = None
         self.draft_recommendation = None
+
+        # Load in coach messages
         self.coach_messages = load_coach_messages()
 
+        # Setup model configuration
         saved_settings = load_model_settings()
-        legacy_model = os.getenv("LEG_AI_MODEL", "").strip()
-        legacy_provider, _, legacy_name = legacy_model.partition(":")
-        self.provider = saved_settings.get("provider", legacy_provider if legacy_name else "")
-        self.model_name = saved_settings.get("model", legacy_name if legacy_name else legacy_model)
+        self.provider = saved_settings.get("provider")
+        self.model_name = saved_settings.get("model")
         self.base_url = saved_settings.get("base_url", "")
-        self.api_key = self._environment_api_key()
+        self.api_key = self.get_key_from_env_vars()
         self.chat_model = None
-        self.agent = None
+        self.coach_agent = None
         self.draft_agent = None
         self.formatter = None
 
-        confirm_hero_masteries(self.graph, self.t1_masteries, self.t2_masteries)
-
+ 
+    ###
     # Model configuration and optional AI services
-
+    ###
     @property
     def ai_enabled(self):
+
+        # If we haven't setup a provider or model name, it's not enabled
         if self.provider not in PROVIDERS or not self.model_name:
             return False
-        return self.provider == "ollama" or bool(self.api_key)
 
-    def model_settings(self):
-        provider = PROVIDERS.get(self.provider, {})
+        # Otherwise if we have a api key, or the provider is ollama, it's enabled
+        if bool(self.api_key) or self.provider == "ollama":
+            return True
+
+        return False
+
+    def get_model_settings(self):
+        provider_config = PROVIDERS.get(self.provider, {})
         return {
             "provider": self.provider,
             "model": self.model_name,
             "base_url": self.base_url,
             "api_key_configured": bool(self.api_key),
             "enabled": self.ai_enabled,
-            "api_key_environment": provider.get("api_key_environment"),
+            "api_key_env_vars": provider_config.get("api_key_env_vars"),
         }
 
     def configure_model(self, provider, model_name, base_url="", api_key=""):
+        # If no provider, 
         if not provider:
             self.provider = ""
             self.model_name = ""
@@ -160,85 +177,130 @@ class GameState:
             self.api_key = ""
             save_model_settings({})
             self.chat_model = None
-            self.agent = None
+            self.coach_agent = None
             self.draft_agent = None
             self.formatter = None
-            return self.model_settings()
+            return self.get_model_settings()
 
+        # Strip prodived data
+        provider = provider.strip()
+        model_name = model_name.strip()
+        base_url = base_url.strip()
+        api_key = api_key.strip()
+
+        # Check provided is valid
         if provider not in PROVIDERS:
             raise ValueError("Unknown model provider.")
-        if not model_name.strip():
+        if not model_name:
             raise ValueError("A model name is required.")
 
+        # Set provider and model name
         self.provider = provider
-        self.model_name = model_name.strip()
-        self.base_url = base_url.strip() if PROVIDERS[provider]["supports_base_url"] else ""
-        if api_key.strip():
-            self.api_key = api_key.strip()
-        elif provider == "ollama":
-            self.api_key = ""
-        else:
-            self.api_key = self._environment_api_key()
+        self.model_name = model_name
 
-        save_model_settings(
-            {
-                "provider": self.provider,
-                "model": self.model_name,
-                "base_url": self.base_url,
-            }
-        )
+        # Handle optionals like base url and api keys
+        self.base_url = base_url if PROVIDERS[provider]["supports_base_url"] else "" 
+        if provider == "ollama":
+            self.api_key = ""
+        elif api_key.strip():
+            self.api_key = api_key.strip()
+        else:
+            self.api_key = self.get_key_from_env_vars() # try and get API key from environment vars
+
+        # Save model settings to file
+        save_model_settings({
+            "provider": self.provider,
+            "model": self.model_name,
+            "base_url": self.base_url,
+        })
+
+        # Clear cached object references so they're recreated when next needed
         self.chat_model = None
-        self.agent = None
+        self.coach_agent = None
         self.draft_agent = None
         self.formatter = None
-        return self.model_settings()
 
-    def get_chat_model(self):
-        if not self.ai_enabled:
-            raise ValueError("The configured provider requires an API key.")
+        return self.get_model_settings()
+
+    def _get_or_create_chat_model(self):
+        """A function to get/setup the configured model.
+
+        Returns:
+            BaseChatModel: a configured langchain chat model.
+        """
+
+        # If we already have one, just return it
         if self.chat_model is not None:
             return self.chat_model
 
+        # If not, setup options
         model_options = {}
         if self.api_key:
             model_options["api_key"] = self.api_key
         if self.base_url and PROVIDERS[self.provider]["supports_base_url"]:
             model_options["base_url"] = self.base_url
 
-        self.chat_model = init_chat_model(
-            self.model_name,
-            model_provider=self.provider,
-            **model_options,
+        # Build the actual langchain chat object
+        self.chat_model = build_chat_model(
+            provider=self.provider,
+            model=self.model_name,
+            options=model_options,
         )
+
+        # Return the configured chat object
         return self.chat_model
 
-    def _get_agent(self):
+    def _get_or_create_coach_agent(self):
+        """Get or create a coach agent langchain object
+
+        Returns:
+            _type_: _description_
+        """
+
+        # If ai_enabled property is not True, return None
         if not self.ai_enabled:
             return None
-        if self.agent is None:
-            self.agent = build_coach_agent(self.data, self.get_chat_model())
-        return self.agent
 
-    def get_draft_ai(self):
+        # If we don't have an agent currently built, make one
+        if self.coach_agent is None:
+            model = self._get_or_create_chat_model()
+            self.coach_agent = build_coach_agent(self.data, model)
+
+        # Otherwise, just return built agent
+        return self.coach_agent
+
+    def _get_or_create_draft_agent(self):
+        # If ai not enabled, return None
         if not self.ai_enabled:
             return None, None
+
+        # If we don't have a draft agent, then build one
         if self.draft_agent is None:
-            chat_model = self.get_chat_model()
-            self.draft_agent = build_draft_agent(self.data, chat_model)
-            self.formatter = build_formatter(chat_model)
+            model = self._get_or_create_chat_model()
+            self.draft_agent = build_draft_agent(self.data, model)
+
+            # The draft agent also needs a formatter
+            self.formatter = build_formatter(model)
+
         return self.draft_agent, self.formatter
 
-    def _environment_api_key(self):
-        provider = PROVIDERS.get(self.provider, {})
-        variable = provider.get("api_key_environment")
-        if not variable:
-            return ""
-        if self.provider == "google_genai":
-            return os.getenv("GOOGLE_API_KEY", "") or os.getenv("GEMINI_API_KEY", "")
-        return os.getenv(variable, "")
+    def get_key_from_env_vars(self):
+        """Helper function to check env vars for an API key
 
-    # Team masteries and draft lifecycle
+        Returns:
+            str: a found API key or ""
+        """
+        provider_config = PROVIDERS.get(self.provider, {})
+        for env_var in provider_config.get("api_key_env_vars", ()):
+            api_key = os.getenv(env_var, "")
+            if api_key:
+                return api_key
 
+        return ""
+
+    ###
+    # Team masteries and draft lifecycle 
+    ###
     def set_masteries(self, team, position, levels):
         masteries = self.t1_masteries if team == "t1" else self.t2_masteries
         for hero, level in levels.items():
@@ -303,7 +365,7 @@ class GameState:
     def end_draft(self):
         self.draft_state = None
         self.draft_recommendation = None
-        self.t2_masteries = create_empty_masteries(self.graph)
+        self.t2_masteries = create_default_masteries(self.graph)
         self.confirmed_t2_positions.clear()
         confirm_hero_masteries(self.graph, self.t1_masteries, self.t2_masteries)
 
@@ -336,7 +398,7 @@ class GameState:
 
         if self.ai_enabled:
             try:
-                agent, formatter = self.get_draft_ai()
+                agent, formatter = self._get_or_create_draft_agent()
                 context = {
                     "action": action.lower(),
                     "candidates": shortlist,
@@ -386,16 +448,25 @@ class GameState:
 
     # Coach conversation
 
-    def stream_coach_message(self, message):
-        self.coach_messages.append({"role": "user", "content": message.strip()})
+    def stream_coach_message(self, prompt: str):
+        """Yield tokens as they are provided from the configured agent.stream
+
+        Args:
+            message (str): The prompt for the agent.
+
+        Yields:
+            Text Accessor: A returned tokens text.
+        """
+        self.coach_messages.append({"role": "user", "content": prompt.strip()})
         save_coach_messages(self.coach_messages)
 
         final_messages = None
-        streamed_text = []
-        completed = False
+
+        # Grab the agent
+        agent = self._get_or_create_coach_agent()
 
         try:
-            for part in self._get_agent().stream(
+            for part in agent.stream(
                 {"messages": self.coach_messages},
                 stream_mode=["messages", "values"], 
                 version="v2",
@@ -404,20 +475,12 @@ class GameState:
                 if part["type"] == "messages":
                     token, _ = part["data"]
                     if isinstance(token, AIMessageChunk) and token.text:
-                        streamed_text.append(token.text)
                         yield token.text
-                # Otherwise if it's value, add it to the final messages
+                # Otherwise if it's value, add it to the final messages for serialisation at the end
                 elif part["type"] == "values":
                     final_messages = part["data"]["messages"]
-
-            completed = True
         finally:
-            if completed and final_messages is not None:
-                self.coach_messages = _serialise_agent_messages(final_messages)
-            elif streamed_text:
-                self.coach_messages.append(
-                    {"role": "ai", "content": "".join(streamed_text)}
-                )
+            self.coach_messages = _serialise_agent_messages(final_messages)
             save_coach_messages(self.coach_messages)
 
     def clear_coach_messages(self):
