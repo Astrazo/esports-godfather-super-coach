@@ -7,7 +7,6 @@ Returns:
     _type_: _description_
 """
 
-import warnings
 from collections import defaultdict
 from dataclasses import dataclass
 
@@ -54,6 +53,8 @@ def score_all_positions(
     all_position_scores = {}
 
     for position in positions:
+
+        # Skip positions that have been confirmed already
         if not available.get(position):
             continue
 
@@ -91,7 +92,7 @@ def score_position(
     friendly_available = draft_state.t1_available if team == "t1" else draft_state.t2_available
     enemy_available = draft_state.t2_available if team == "t1" else draft_state.t1_available
 
-    # Score all candidates for the requested lane
+    # Score all candidates for the requested position
     candidates = friendly_available[lane]
     results = {
         hero: _score_hero(
@@ -267,11 +268,13 @@ def _score_hero(
 
 
 # Hero set manipulation functions
-def pick_hero(G, hero: str, team: str, draft_state: DraftState):
+def pick_hero(G, hero: str, team: str, position: str, draft_state: DraftState):
+    """Record a pick in its confirmed position and remove that lane from the team's pool."""
 
     # Unpack data
     t1_available = draft_state.t1_available
     t2_available = draft_state.t2_available
+    team_available = t1_available if team == "t1" else t2_available
     t_picked = draft_state.t1_picked if team == "t1" else draft_state.t2_picked
 
     # This hero is no longer available
@@ -280,39 +283,12 @@ def pick_hero(G, hero: str, team: str, draft_state: DraftState):
     for pool in t2_available.values():
         pool.discard(hero)
 
-    # Set positions this new hero could play
-    masteries_text = "t1_masteries" if team == "t1" else "t2_masteries"
-    t_picked[hero] = {
-        position for position, mastery in G.nodes[hero][masteries_text].items() if mastery > 0
-    }
+    # The user has confirmed this hero's lane, so it cannot be treated as flex.
+    t_picked[hero] = {position}
 
-    changed = True
-    while changed:
-        changed = False
-
-        # See what positions are locked
-        locked_positions = {
-            next(iter(positions)) for positions in t_picked.values() if len(positions) == 1
-        }
-
-        for possible_positions in t_picked.values():
-            if len(possible_positions) == 1:
-                continue
-
-            previous_positions = possible_positions.copy()
-            possible_positions.difference_update(locked_positions)
-
-            if possible_positions != previous_positions:
-                changed = True
-
-            if not possible_positions:
-                warnings.warn(
-                    f"It seems {hero} has no valid remaining positions based on the "
-                    "availabilities provided. This may be okay if you did not provide "
-                    "all of T2's availabilities.",
-                    UserWarning,
-                    stacklevel=2,
-                )
+    # A team may field only one hero in a position. Clearing this pool ensures
+    # scoring skips the filled lane for future recommendations.
+    team_available[position].clear()
 
 
 def ban_hero(hero: str, draft_state: DraftState):

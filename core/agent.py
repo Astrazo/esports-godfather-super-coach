@@ -1,12 +1,10 @@
 from pathlib import Path
-from typing import Literal
+from typing import Callable, Literal
 
 from langchain.agents import create_agent
 from langgraph.graph.state import CompiledStateGraph
-from langchain_core.runnables import Runnable
-from langchain.chat_models import init_chat_model, BaseChatModel
+from langchain.chat_models import init_chat_model
 from langchain.tools import tool
-from pydantic import BaseModel, Field
 
 from core.data import (
     GlobalData,
@@ -23,27 +21,18 @@ PROMPTS_DIRECTORY = PROJECT_DIRECTORY / "data" / "core_data" / "prompts"
 COACH_SYSTEM_PROMPT_FILE = PROMPTS_DIRECTORY / "coach_system_prompt.md"
 COACH_SYSTEM_PROMPT = COACH_SYSTEM_PROMPT_FILE.read_text(encoding="utf-8")
 
-DRAFT_SYSTEM_PROMPT_FILE = PROMPTS_DIRECTORY / "draft_system_prompt.md"
-DRAFT_SYSTEM_PROMPT = DRAFT_SYSTEM_PROMPT_FILE.read_text(encoding="utf-8")
-
-
-class DraftRecommendationDecision(BaseModel):
-    """The draft agent's choice from the supplied deterministic candidates."""
-
-    recommended_hero: str = Field(description="The exact hero name from the supplied candidates.")
-    position: Literal["Top", "Jungler", "Mid", "Bot", "Support"] = Field(
-        description="The exact position paired with the selected candidate."
-    )
-    analysis: str = Field(
-        description="A concise explanation of the choice and any qualitative tradeoffs."
-    )
-
-
-def _build_agent(data: GlobalData, system_prompt, model: str, response_format=None) -> CompiledStateGraph:
+def _build_agent(
+    data: GlobalData,
+    graph_relationships: Callable[[str, list[str]], dict[str, list[str]]],
+    system_prompt,
+    model: str,
+    response_format=None,
+) -> CompiledStateGraph:
     """Build an agent with tools.
 
     Args:
         data (GlobalData): _description_
+        graph_relationships: Reads directional relationships from the master graph.
         system_prompt (_type_): _description_
         model (str): _description_
         response_format (_type_, optional): _description_. Defaults to None.
@@ -52,14 +41,21 @@ def _build_agent(data: GlobalData, system_prompt, model: str, response_format=No
         CompiledStateGraph: an agent object supporting .invoke() and .stream()
     """
     @tool
-    def get_hero_best_positions(hero_name: str) -> str:
-        """Get the position suitabiliy for the requested hero for the requested tier.
+    def get_hero_best_positions(hero_name: str) -> dict[str, object]:
+        """Return every position a hero can play and its numeric tier.
+
+        Use this tool to verify which positions a hero can play or compare their
+        position suitability. Tier scores are 5=S, 4=A, 3=B, 2=C, and 1=D.
 
         Args:
-            hero_name (str): the name of the hero you want to check
+            hero_name: The hero to look up.
 
         Returns:
-            dict[str, str|dict[str, str]]: A lookup for each position and it's tier.
+            A dictionary with the hero name and a position-to-tier mapping.
+
+        Limits:
+            An unlisted position is unsuitable. This tool does not account for
+            player masteries, current picks, bans, or draft availability.
         """
         tiers = data.hero_tiers.get(hero_name, {})
         output = {"hero_name": hero_name, "positions": tiers}
@@ -69,16 +65,22 @@ def _build_agent(data: GlobalData, system_prompt, model: str, response_format=No
     def get_position_best_heroes(
         position_name: Literal["Top", "Jungler", "Mid", "Bot", "Support"],
         tier: Literal[1, 2, 3, 4, 5] = 5,
-    ) -> str:
-        """Get heroes whose tier for the given position matches the requested tier.
+    ) -> dict[str, object]:
+        """Return heroes at one exact tier for a requested position.
+
+        Use this tool to find strong heroes for a position. The default tier is
+        5 (S tier); use 4=A, 3=B, 2=C, or 1=D when the question asks for them.
 
         Args:
-            position_name (str): the name of the position you want to check.
-            tier (int, optional): the position tier you want to check. Defaults to 5.
+            position_name: The position to search.
+            tier: The exact numeric tier to match. Defaults to 5 (S tier).
 
         Returns:
-            dict[str, str | list[str]]: Heroes whose score matches the requested
-            position tier.
+            A dictionary with the position, requested tier, and matching heroes.
+
+        Limits:
+            This tool returns only exact tier matches. It does not account for
+            player masteries, current picks, bans, or draft availability.
         """
         hero_tiers = data.hero_tiers
         heroes = {
@@ -95,41 +97,128 @@ def _build_agent(data: GlobalData, system_prompt, model: str, response_format=No
         return output
 
     @tool
-    def get_team_comp_info(comp_name: str) -> str:
-        """Get notes on a team comp.
+    def get_hero_relationships(
+        hero_name: str,
+        relationship_type: Literal[
+            "counter",
+            "countered_by",
+            "synergy",
+            "anti_synergy",
+        ],
+    ) -> list[str]:
+        """Return heroes connected by one directional graph relationship.
+
+        Use this tool for verified counters, synergies, and anti-synergies.
 
         Args:
-            comp_name (str): The name of the team comp.
+            hero_name: The hero at the source of the relationship.
+            relationship_type: The directional relationship to query. `counter`
+                means the requested hero is strong against returned heroes;
+                `countered_by` reverses that direction; `synergy` and
+                `anti_synergy` describe positive and negative team fit.
 
         Returns:
-            str: information regarding the team comp.
+            A sorted list of directly related heroes.
+
+        Limits:
+            Returns an empty list when no direct relationship is recorded. It
+            does not account for draft availability, picks, bans, or masteries.
+        """
+        relationships = graph_relationships(hero_name, [relationship_type])
+        return relationships.get(relationship_type, [])
+
+    @tool
+    def get_team_comp_info(
+        comp_name: Literal[
+            "Alpha Strike",
+            "Bot Lane Focus",
+            "Jungle Focus",
+            "Premeditated Murder",
+            "Single Hero",
+            "Theme",
+        ],
+    ) -> str:
+        """Return the strategy and examples for one named team composition approach.
+
+        Use this tool when a player asks how to build around a recognised team
+        composition approach or wants examples of that approach.
+
+        Args:
+            comp_name: The composition approach to look up.
+
+        Returns:
+            Verified strategy notes and example hero compositions.
+
+        Limits:
+            This describes a general composition approach, not the current
+            draft's availability or a recommendation for a specific team.
         """
         return read_team_comp_info(comp_name)
 
     @tool
-    def get_attribute_info(category: str, instance: str) -> str:
-        """Get notes on a category of hero attributes.
+    def get_attribute_info(
+        category: Literal["hero_class", "attack_type", "damage_type"],
+        instance: str,
+    ) -> str:
+        """Return verified information about one hero attribute.
+
+        Use this tool to explain a hero class, attack type, or damage type whenever the player asks about it.
+        First use a hero's `Hero Analysis` section when you need to identify
+        which attribute the hero has.
 
         Args:
-            category (str): The category (hero class, attack type, damage type)
-            instance (str): The attribute name, for example (gladiator, melee, magical)
+            category: The attribute category to search.
+            instance: The attribute value, such as `Fighter`, `Melee`, or
+                `Magical`.
 
         Returns:
-            str: information regarding this attribute
+            A verified definition and its gameplay implications.
+
+        Limits:
+            Returns only information about the requested attribute; it does not
+            identify which heroes have that attribute.
         """
         return read_attribute_info(category, instance)
 
     @tool
-    def get_hero_info(hero_name: str) -> str:
-        """Get markdown notes on a specific hero by name.
+    def get_hero_info(
+        hero_name: str,
+        sections: list[
+            Literal[
+                "Hero Summary",
+                "Hero Analysis",
+                "Cards",
+                "Variants",
+                "Item Build",
+                "Funnelling",
+                "Interactions",
+            ]
+        ],
+    ) -> str:
+        """Return selected top-level reference sections for a specific hero.
+
+        Use this tool for hero-specific facts. Request only the sections needed
+        for the question to avoid loading unrelated reference material.
 
         Args:
-            hero_name (str): the name of the hero you want to look up
+            hero_name: The hero to look up.
+            sections: Only request the sections needed for the question.
+                - Hero Summary: A short role and strength overview.
+                - Hero Analysis: Attributes and core gameplay mechanics.
+                - Cards: Card descriptions and card-specific strategy.
+                - Variants: Variant effects and tradeoffs.
+                - Item Build: Hero-specific itemisation guidance.
+                - Funnelling: Whether the hero benefits from extra resources.
+                - Interactions: Synergies, counters, and special cases.
 
         Returns:
-            str: information regarding this hero
+            The requested verified hero information.
+
+        Limits:
+            This returns static reference information only; it does not include
+            current draft availability, player mastery, or graph relationships.
         """
-        return read_hero_info(hero_name)
+        return read_hero_info(hero_name, sections)
 
     @tool
     def get_build_type_itemisation(
@@ -148,25 +237,41 @@ def _build_agent(data: GlobalData, system_prompt, model: str, response_format=No
             "tank one damage item",
         ],
     ) -> str:
-        """Get markdown itemisation notes for a build type.
+        """Return item recommendations, examples, and caveats for one build type.
+
+        Use this tool after identifying a hero's relevant build type, usually
+        from that hero's `Item Build` section.
 
         Args:
-            role (str): the role to look up
+            build: The build archetype to look up.
 
         Returns:
-            str: information on the
+            Verified recommended items, example builds, and warnings for the
+            requested archetype.
+
+        Limits:
+            This is archetype-wide guidance. Combine it with hero-specific
+            `Item Build` information before recommending a final build.
         """
         return read_build_type_itemisation(build)
 
     @tool
     def lookup_glossary(term: str) -> str:
-        """Define a game term or abbreviation from the glossary.
+        """Return a verified definition for an Esports Godfather term.
+
+        Use this tool when a game term or abbreviation is unfamiliar or its
+        meaning matters to the answer.
 
         Args:
-            term (str): the term or abbreviation to define.
+            term: The exact term or abbreviation to define.
 
         Returns:
-            str: the definition of the term or abbreviation.
+            The glossary definition, or a message that no verified definition
+            was found.
+
+        Limits:
+            Do not infer a missing game-specific definition from general MOBA
+            knowledge; ask the player to clarify instead.
         """
         return read_glossary_definition(term)
 
@@ -180,6 +285,7 @@ def _build_agent(data: GlobalData, system_prompt, model: str, response_format=No
             get_team_comp_info,
             get_hero_best_positions,
             get_position_best_heroes,
+            get_hero_relationships,
         ],
         system_prompt=system_prompt,
         response_format=response_format,
@@ -201,42 +307,19 @@ def build_chat_model(provider: str, model: str, options: dict):
     return init_chat_model(model=model, model_provider=provider, **options)
 
 
-def build_coach_agent(data: GlobalData, model: str) -> CompiledStateGraph:
+def build_coach_agent(
+    data: GlobalData,
+    graph_relationships: Callable[[str, list[str]], dict[str, list[str]]],
+    model: str,
+) -> CompiledStateGraph:
     """Build a coach agent langchain object.
 
     Args:
         data (GlobalData): _description_
-        model (_type_, optional): _description_.
+        graph_relationships: Reads directional relationships from the master graph.
+        model: The configured chat model.
 
     Returns:
         CompiledStateGraph: an agent object supporting .invoke() and .stream()
     """
-    return _build_agent(data, COACH_SYSTEM_PROMPT, model)
-
-
-def build_draft_agent(data: GlobalData, model: str) -> CompiledStateGraph:
-    """Build a draft agent langchain object.
-
-    Args:
-        data (GlobalData): _description_
-        model (_type_, optional): _description_.
-
-    Returns:
-        CompiledStateGraph: an agent object supporting .invoke() and .stream()
-    """
-    return _build_agent(data, DRAFT_SYSTEM_PROMPT, model)
-
-
-def build_formatter(model: BaseChatModel) -> Runnable:
-    """Generate a formatter version of a built chat model object.
-
-    Args:
-        model (BaseChatModel): a built langchain chat model object.
-
-    Returns:
-        Runnable: a built langchain chat model object with a defined output schema
-    """
-    return model.with_structured_output(
-        DraftRecommendationDecision,
-        method="json_schema",
-    )
+    return _build_agent(data, graph_relationships, COACH_SYSTEM_PROMPT, model)

@@ -65,35 +65,41 @@ ROLE_ITEMISATION_ALIASES = {
     "special case": "special_case",
 }
 
-def read_hero_info(hero_name: str) -> str:
-    """Return the markdown notes for a hero."""
+HERO_INFO_HEADINGS = (
+    "Hero Summary",
+    "Hero Analysis",
+    "Cards",
+    "Variants",
+    "Item Build",
+    "Funnelling",
+    "Interactions",
+)
+
+
+def read_hero_info(hero_name: str, sections: list[str]) -> str:
+    """Return only the requested top-level markdown sections for a hero."""
     hero_info_path = HERO_INFO_DIRECTORY / _hero_name_to_info_filename(hero_name)
 
     if not hero_info_path.exists():
         return f"No hero info found for '{hero_name}'. Ask the user to clarify the hero name."
-    
-    hero_info = hero_info_path.read_text(encoding="utf-8")
-    
-    # Take apart the headings
-    summary = _extract_markdown_section(hero_info, heading="Hero Summary")
-    analysis = _extract_markdown_section(hero_info, heading="Hero Analysis")
-    description = _extract_markdown_section(hero_info, heading="Hero Description")
-    variants = _extract_markdown_section(hero_info, heading="Variants")
-    interactions = _extract_markdown_section(hero_info, heading="Interactions")
 
-    sections = [
-        ("Hero Summary", summary),
-        ("Hero Analysis", analysis),
-        ("Hero Description", description),
-        ("Variants", variants),
-        ("Interactions", interactions),
+    hero_info = hero_info_path.read_text(encoding="utf-8")
+
+    requested_sections = [heading for heading in HERO_INFO_HEADINGS if heading in sections]
+    outputs = [
+        (heading, _extract_markdown_section(hero_info, heading=heading))
+        for heading in requested_sections
     ]
 
-    return "\n\n".join(
+    result = "\n\n".join(
         f"# {heading}\n{content}"
-        for heading, content in sections
+        for heading, content in outputs
         if content
-    ) 
+    )
+    if result:
+        return result
+
+    return f"No requested sections are available for '{hero_name}'."
 
 
 def read_build_type_itemisation(role: str) -> str:

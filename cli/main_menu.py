@@ -1,7 +1,10 @@
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
 from state import GameState
-from cli.settings import run_ai_settings
+from cli.settings import run_ai_settings, run_draft_order_settings
+from cli.draft import run_draft
+from cli.my_team import run_my_team
+from cli.ui import error, heading, info, menu, success, tool_call, warning
 import sys
 
 def run_cli():
@@ -10,8 +13,8 @@ def run_cli():
     session = PromptSession()
     ai_status = "enabled" if game.ai_enabled else "not configured"
 
-    print(f"Loaded {len(game.data.hero_names)} heroes.")
-    print(f"AI integration: {ai_status}.")
+    info(f"Loaded {len(game.data.hero_names)} heroes.")
+    info(f"AI integration: {ai_status}.")
 
     # Bring up main menu
     while True:
@@ -23,42 +26,53 @@ def run_cli():
 def _prompt_main_menu(session, game):
     # Wait for choice, then handle it
     while True:
-        print("\nLazy Esports Godfather - CLI\n")
-        print("1. Coach")
-        print("2. Settings")
-        print("0. Exit")
+        heading("Lazy Esports Godfather")
+        menu(
+            [
+                ("1", "Coach"),
+                ("2", "My Team"),
+                ("3", "Draft"),
+                ("4", "Settings"),
+            ],
+            "/exit",
+        )
 
         choice = session.prompt("Choose an option> ").strip()
 
         match (choice):
-            case "0":
+            case "/exit":
                 return
             case "1":
                 _run_coach(session, game)
             case "2":
+                run_my_team(session, game)
+            case "3":
+                run_draft(session, game)
+            case "4":
                 _run_settings(session, game)
             case _:
-                print("Please select a valid choice.")
+                error("Please select a valid choice.")
 
 def _run_coach(session, game: GameState):
 
     if not game.ai_enabled:
-        print("AI not enabled.  Configure AI in settings to enable coach.")
+        warning("AI is not enabled. Configure it in Settings to use Coach.")
         return
 
-    print("\n===Coach===")
+    heading("Coach")
+    info("Commands: /help, /clear, /back")
 
     while True:
         prompt = session.prompt("\nCoach> ").strip()
 
         match prompt:
             case "/help":
-                print("Help list coming soon.")
+                info("Commands: /clear removes conversation history; /back returns to the main menu.")
                 continue
 
             case "/clear":
                 game.clear_coach_messages()
-                print("All coach messages cleared.")
+                success("All coach messages cleared.")
                 continue
 
             case "/back":
@@ -66,28 +80,46 @@ def _run_coach(session, game: GameState):
 
             # If invalid command
             case _ if prompt.startswith("/"):
-                print("Please enter a valid command. Type /help for a command list.")
+                error("Unknown command. Type /help for the command list.")
                 continue
 
             # If prompt is empty
             case "":
                 continue
 
-        print("Coach thinking: \n", end="", flush=True)
+        info("Coach is thinking...")
 
-        for chunk in game.stream_coach_message(prompt):
-            print(chunk, end="", flush=True)
+        streaming_text = False
+        for event in game.stream_coach_chat(prompt):
+            if event["type"] == "tool_call":
+                if streaming_text:
+                    print()
+                    streaming_text = False
+                tool_call(event["name"], event["args"])
+            else:
+                print(event["content"], end="", flush=True)
+                streaming_text = True
+
+        # Finish the streamed reply before prompt_toolkit draws the next
+        # input prompt, so its redraw cannot occupy the reply's final line.
+        print()
 
 def _run_settings(session, game):
     while True:
-        print("\nSettings\n")
-        print("1. AI Configuration")
-        print("0. Back")
+        heading("Settings")
+        menu(
+            [("1", "AI Configuration"), ("2", "Draft Order")],
+            "/back",
+        )
 
         choice = session.prompt("Choose an option> ").strip()
 
         match choice:
             case "1":
                 run_ai_settings(session, game)
-            case "0":
+            case "2":
+                run_draft_order_settings(session, game)
+            case "/back":
                 return
+            case _:
+                error("Please select a valid choice.")

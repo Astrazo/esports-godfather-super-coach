@@ -59,23 +59,26 @@ def save_coach_messages(messages):
     _write_json(COACH_MESSAGES_FILE, messages)
 
 
-def load_draft_order(default_order):
+def load_draft_order():
     saved_order = _read_json(DRAFT_ORDER_FILE, None)
     if not isinstance(saved_order, list) or not saved_order:
-        return default_order.copy()
+        return None
 
     draft_order = []
     for step in saved_order:
         if (
             not isinstance(step, list)
             or len(step) != 2
-            or step[0] not in {"Blue", "Red"}
-            or step[1] not in {"Pick", "Ban"}
+            or not isinstance(step[0], str)
+            or not isinstance(step[1], str)
         ):
-            return default_order.copy()
+            return None
 
-        side = {"t1": "blue", "t2": "red"}.get(step[0], step[0])
-        draft_order.append((side, step[1]))
+        side = {"t1": "blue", "t2": "red"}.get(step[0].lower(), step[0].lower())
+        action = step[1].title()
+        if side not in {"blue", "red"} or action not in {"Pick", "Ban"}:
+            return None
+        draft_order.append((side, action))
 
     return draft_order
 

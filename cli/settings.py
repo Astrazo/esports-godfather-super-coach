@@ -1,6 +1,7 @@
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
 from state import GameState
+from cli.ui import draft_order, error, heading, info, menu, success
 
 
 def run_ai_settings(session: PromptSession, game: GameState):
@@ -17,18 +18,21 @@ def run_ai_settings(session: PromptSession, game: GameState):
         api_key_status = "Configured" if model_settings.get("api_key_configured") else "Not configured"
         ai_status = "Enabled" if model_settings.get("enabled") else "Disabled"
 
-        print("\nAI Configuration")
-        print(f"  Provider: {current_provider}")
-        print(f"  Model:    {current_model}")
-        print(f"  Base URL: {current_base_url}")
-        print(f"  API key:  {api_key_status}")
-        print(f"  AI:       {ai_status}\n")
-        print("1. Set provider")
-        print("2. Set model")
-        print("3. Set base url (optional)")
-        print("4. Set API key (optional)")
-        print("5. Disable AI")
-        print("0. Back")
+        heading("AI Configuration")
+        info(
+            f"Provider: {current_provider} | Model: {current_model} | "
+            f"Base URL: {current_base_url} | API key: {api_key_status} | AI: {ai_status}"
+        )
+        menu(
+            [
+                ("1", "Set provider"),
+                ("2", "Set model"),
+                ("3", "Set base URL"),
+                ("4", "Set API key"),
+                ("5", "Disable AI"),
+            ],
+            "/back",
+        )
 
 
         choice = session.prompt("\nChoose an option> ").strip()
@@ -36,16 +40,16 @@ def run_ai_settings(session: PromptSession, game: GameState):
         match choice:
             case "1":
                 current_provider = _set_ai_provider(session)
-                print("\nProvider updated.")
+                success("Provider updated.")
             case "2":
                 current_model = _set_ai_model(session)
-                print("\nModel name updated.")
+                success("Model name updated.")
             case "3":
                 current_base_url = _set_ai_base_url(session)
-                print("\nHost URL updated.")
+                success("Host URL updated.")
             case "4":
                 current_api_key = _set_ai_api_key(session)
-                print("\nAPI key updated.")
+                success("API key updated.")
             case "5":
                 (
                     current_provider,
@@ -53,9 +57,12 @@ def run_ai_settings(session: PromptSession, game: GameState):
                     current_base_url,
                     current_api_key,
                 ) = _disable_ai()
-                print("\nAI disabled.")
-            case "0":
+                success("AI disabled.")
+            case "/back":
                 return
+            case _:
+                error("Please select a valid choice.")
+                continue
 
         # Update model config
         game.configure_model(
@@ -88,4 +95,61 @@ def _disable_ai():
     base_url = ""
     api_key = ""
     return provider, model_name, base_url, api_key
+
+
+def run_draft_order_settings(session: PromptSession, game: GameState):
+    """Set or clear the sequence of actions used in a draft."""
+    while True:
+        heading("Draft Order")
+        draft_order(game.draft_order)
+        menu(
+            [("1", "Set draft order"), ("2", "Clear draft order")],
+            "/back",
+        )
+
+        choice = session.prompt("Choose an option> ").strip()
+        if choice == "1":
+            _replace_draft_order(session, game)
+        elif choice == "2":
+            game.set_draft_order([])
+            success("Draft order cleared.")
+        elif choice == "/back":
+            return
+        else:
+            error("Please select a valid choice.")
+
+
+def _replace_draft_order(session: PromptSession, game: GameState):
+    step_completer = WordCompleter(
+        ["blue", "red", "pick", "ban"],
+        ignore_case=True,
+    )
+    steps = []
+
+    heading("Set Draft Order")
+    info("Add steps as '<blue/red> <pick/ban>', for example: red pick.")
+    info("Commands: /done saves; /cancel discards changes.")
+    while True:
+        entry = session.prompt(
+            f"Step {len(steps) + 1} (/done)> ",
+            completer=step_completer,
+        ).strip().lower()
+
+        if entry == "/cancel":
+            info("Draft order unchanged.")
+            return
+        if entry == "/done":
+            if not steps:
+                error("Add at least one step before saving.")
+                continue
+            game.set_draft_order(steps)
+            success("Draft order saved.")
+            return
+
+        parts = entry.split()
+        if len(parts) != 2 or parts[0] not in {"blue", "red"} or parts[1] not in {"pick", "ban"}:
+            error("Enter a side and action, for example: red pick.")
+            continue
+
+        steps.append((parts[0], parts[1].title()))
 

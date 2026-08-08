@@ -24,15 +24,13 @@ from collections import defaultdict
 
 from langchain.messages import AIMessageChunk
 
-from core.agent import build_chat_model, build_coach_agent, build_draft_agent, build_formatter
+from core.agent import build_chat_model, build_coach_agent
 from core.data import build_global_data
 from core.draft import (
-    ban_hero,
     build_candidate_shortlist,
     build_draft_state,
     build_position_availability,
     get_scored_candidate,
-    pick_hero,
     score_all_positions,
 )
 from core.graph import build_master_graph, confirm_hero_masteries
@@ -47,29 +45,6 @@ from core.persistence import (
     save_model_settings,
     save_t1_masteries,
 )
-
-DEFAULT_DRAFT_ORDER = [
-    ("blue", "Ban"),
-    ("red", "Ban"),
-    ("blue", "Ban"),
-    ("red", "Ban"),
-    ("blue", "Ban"),
-    ("red", "Ban"),
-    ("blue", "Pick"),
-    ("red", "Pick"),
-    ("red", "Pick"),
-    ("blue", "Pick"),
-    ("blue", "Pick"),
-    ("red", "Pick"),
-    ("red", "Pick"),
-    ("blue", "Pick"),
-    ("red", "Ban"),
-    ("blue", "Ban"),
-    ("blue", "Ban"),
-    ("red", "Ban"),
-    ("blue", "Pick"),
-    ("red", "Pick"),
-]
 
 PROVIDERS = {
     "ollama": {
@@ -122,7 +97,7 @@ class GameState:
 
         # Setup draft data
         self.confirmed_t2_positions = set() # so confirmed positions aren't suggested
-        self.draft_order = load_draft_order(DEFAULT_DRAFT_ORDER)
+        self.draft_order = load_draft_order()
         self.draft_state = None
         self.draft_recommendation = None
 
@@ -137,8 +112,6 @@ class GameState:
         self.api_key = self.get_key_from_env_vars()
         self.chat_model = None
         self.coach_agent = None
-        self.draft_agent = None
-        self.formatter = None
 
  
     ###
@@ -178,8 +151,6 @@ class GameState:
             save_model_settings({})
             self.chat_model = None
             self.coach_agent = None
-            self.draft_agent = None
-            self.formatter = None
             return self.get_model_settings()
 
         # Strip prodived data
@@ -217,8 +188,6 @@ class GameState:
         # Clear cached object references so they're recreated when next needed
         self.chat_model = None
         self.coach_agent = None
-        self.draft_agent = None
-        self.formatter = None
 
         return self.get_model_settings()
 
@@ -264,25 +233,10 @@ class GameState:
         # If we don't have an agent currently built, make one
         if self.coach_agent is None:
             model = self._get_or_create_chat_model()
-            self.coach_agent = build_coach_agent(self.data, model)
+            self.coach_agent = build_coach_agent(self.data, self.graph_relationships, model)
 
         # Otherwise, just return built agent
         return self.coach_agent
-
-    def _get_or_create_draft_agent(self):
-        # If ai not enabled, return None
-        if not self.ai_enabled:
-            return None, None
-
-        # If we don't have a draft agent, then build one
-        if self.draft_agent is None:
-            model = self._get_or_create_chat_model()
-            self.draft_agent = build_draft_agent(self.data, model)
-
-            # The draft agent also needs a formatter
-            self.formatter = build_formatter(model)
-
-        return self.draft_agent, self.formatter
 
     def get_key_from_env_vars(self):
         """Helper function to check env vars for an API key
@@ -319,11 +273,22 @@ class GameState:
         }
 
     def set_draft_order(self, steps):
+        if not steps:
+            self.draft_order = None
+            save_draft_order([])
+            return self.draft_order
+
+        for side, action in steps:
+            if side not in {"blue", "red"} or action not in {"Pick", "Ban"}:
+                raise ValueError("Draft steps must use blue/red and Pick/Ban.")
+
         self.draft_order = steps
         save_draft_order(self.draft_order)
         return self.draft_order
 
     def start_draft(self, player_side):
+        if not self.draft_order:
+            raise ValueError("Configure a draft order before starting a draft.")
         confirm_hero_masteries(self.graph, self.t1_masteries, self.t2_masteries)
         draft = build_draft_state(self.draft_order, player_side)
         draft.t1_available = build_position_availability(self.t1_masteries)
@@ -339,15 +304,14 @@ class GameState:
         if action == "Pick":
             if position not in POSITIONS:
                 raise ValueError("A valid position is required for a pick.")
-            available = draft.t1_available if team == "t1" else draft.t2_available
-            if hero not in available.get(position, set()):
-                raise ValueError(f"{hero} is not available for {position}.")
-            pick_hero(self.graph, hero, team, draft)
+            self._record_draft_pick(team, hero, position)
         else:
-            available = set().union(*draft.t1_available.values(), *draft.t2_available.values())
-            if hero not in available:
-                raise ValueError(f"{hero} is not available to ban.")
-            ban_hero(hero, draft)
+            if hero not in self.graph:
+                raise ValueError(f"Unknown hero: {hero}")
+            draft.t1_picked.pop(hero, None)
+            draft.t2_picked.pop(hero, None)
+            draft.banned.add(hero)
+            self._rebuild_draft_availability()
 
         draft.current_step += 1
         self.refresh_recommendation()
@@ -362,6 +326,83 @@ class GameState:
             draft.t2_available[position] = latest_available[position] - unavailable
         self.refresh_recommendation()
 
+    def set_draft_pick(self, team, hero, position):
+        """Set the current confirmed hero for a team position, replacing stale data."""
+        draft = self._require_draft()
+        if team not in {"t1", "t2"}:
+            raise ValueError("Team must be t1 or t2.")
+        if position not in POSITIONS:
+            raise ValueError("A valid position is required.")
+
+        if hero not in self.graph:
+            raise ValueError(f"Unknown hero: {hero}")
+
+        if position not in self.graph.nodes[hero]["tiers"]:
+            raise ValueError(f"{hero} cannot play {position}.")
+
+        self._record_draft_pick(team, hero, position)
+        self.refresh_recommendation()
+
+    def _record_draft_pick(self, team, hero, position):
+        """Replace one team's lane assignment and rebuild the remaining pools."""
+        draft = self._require_draft()
+        if hero not in self.graph:
+            raise ValueError(f"Unknown hero: {hero}")
+        if position not in self.graph.nodes[hero]["tiers"]:
+            raise ValueError(f"{hero} cannot play {position}.")
+
+        team_picks = draft.t1_picked if team == "t1" else draft.t2_picked
+        other_picks = draft.t2_picked if team == "t1" else draft.t1_picked
+
+        # A hero can only appear once across both teams, and a lane can only
+        # contain one hero for the team. The newest entered value is authoritative.
+        team_picks.pop(hero, None)
+        other_picks.pop(hero, None)
+        for picked_hero, positions in list(team_picks.items()):
+            if position in positions:
+                del team_picks[picked_hero]
+
+        team_picks[hero] = {position}
+        draft.banned.discard(hero)
+        self._rebuild_draft_availability()
+
+    def set_draft_ban(self, hero):
+        """Record a currently correct ban, replacing any conflicting pick."""
+        draft = self._require_draft()
+        if hero not in self.graph:
+            raise ValueError(f"Unknown hero: {hero}")
+
+        draft.t1_picked.pop(hero, None)
+        draft.t2_picked.pop(hero, None)
+        draft.banned.add(hero)
+        self._rebuild_draft_availability()
+        self.refresh_recommendation()
+
+    def remove_draft_ban(self, hero):
+        """Remove a ban when it was entered incorrectly."""
+        draft = self._require_draft()
+        draft.banned.discard(hero)
+        self._rebuild_draft_availability()
+        self.refresh_recommendation()
+
+    def _rebuild_draft_availability(self):
+        """Recreate remaining pools from masteries and the current draft truth."""
+        draft = self._require_draft()
+        draft.t1_available = build_position_availability(self.t1_masteries)
+        draft.t2_available = build_position_availability(self.t2_masteries)
+        unavailable = set(draft.t1_picked) | set(draft.t2_picked) | draft.banned
+
+        for available in (draft.t1_available, draft.t2_available):
+            for pool in available.values():
+                pool.difference_update(unavailable)
+
+        for positions in draft.t1_picked.values():
+            for position in positions:
+                draft.t1_available[position].clear()
+        for positions in draft.t2_picked.values():
+            for position in positions:
+                draft.t2_available[position].clear()
+
     def end_draft(self):
         self.draft_state = None
         self.draft_recommendation = None
@@ -370,16 +411,22 @@ class GameState:
         confirm_hero_masteries(self.graph, self.t1_masteries, self.t2_masteries)
 
     def refresh_recommendation(self):
+        """Publish the best deterministic graph recommendation for this draft step."""
         self.draft_recommendation = None
         draft = self.draft_state
         if draft is None or draft.current_step >= len(draft.draft_order):
             return
 
         acting_side, action = draft.draft_order[draft.current_step]
+
+        # If this isn't a player action, simply skip
         if acting_side != draft.player_side:
             return
 
+        # Decide what team to score (if action is pick, score player team, if action is ban, score enemy team)
         scoring_team = "t1" if action == "Pick" else "t2"
+
+        # Score all positions to find the best possible pick currently
         position_scores = score_all_positions(
             self.graph,
             scoring_team,
@@ -390,46 +437,17 @@ class GameState:
         if not position_scores:
             return
 
+        # Build shortlist (only take the top n heroes for consideration)
         shortlist = build_candidate_shortlist(position_scores)
+
+        # Publish the deterministic result before any optional AI work begins.
         best = max(shortlist, key=lambda candidate: candidate["score"])
-        selected_hero = best["hero"]
-        selected_position = best["position"]
-        analysis = "This is the strongest deterministic graph score for the current draft."
-
-        if self.ai_enabled:
-            try:
-                agent, formatter = self._get_or_create_draft_agent()
-                context = {
-                    "action": action.lower(),
-                    "candidates": shortlist,
-                    "player_picks": _serialise_picks(draft.t1_picked),
-                    "cpu_picks": _serialise_picks(draft.t2_picked),
-                    "banned_heroes": sorted(draft.banned),
-                }
-                prompt = (
-                    "Recommend one supplied hero and position. Treat the graph scores as "
-                    "authoritative evidence, but use your hero tools when qualitative "
-                    "information could justify another supplied candidate. Explain the choice "
-                    "naturally as advice to a teammate.\n\nDraft context:\n"
-                    + json.dumps(context, indent=2)
-                )
-                result = agent.invoke({"messages": [{"role": "user", "content": prompt}]})
-                response_text = str(result["messages"][-1].text).strip()
-                decision = formatter.invoke(
-                    "Extract the recommended hero, position, and analysis from this response:\n\n"
-                    + response_text
-                )
-                selected_hero = decision.recommended_hero
-                selected_position = decision.position
-                analysis = decision.analysis
-                get_scored_candidate(position_scores, selected_hero, selected_position)
-            except Exception as error:
-                analysis += f" AI review was unavailable: {error}"
-                selected_hero = best["hero"]
-                selected_position = best["position"]
-
-        scored = get_scored_candidate(position_scores, selected_hero, selected_position)
-        self.draft_recommendation = {**scored, "analysis": analysis}
+        scored = get_scored_candidate(position_scores, best["hero"], best["position"])
+        self.draft_recommendation = {
+            **scored,
+            "analysis": "This is the strongest deterministic graph score for the current draft.",
+            "source": "graph",
+        }
 
     # Graph queries
 
@@ -448,40 +466,97 @@ class GameState:
 
     # Coach conversation
 
-    def stream_coach_message(self, prompt: str):
-        """Yield tokens as they are provided from the configured agent.stream
+    def stream_draft_advice(self, question: str):
+        """Ask the coach about the live draft using a concise, readable briefing."""
+        draft = self._require_draft()
+        next_action = "Draft complete"
+        if draft.current_step < len(draft.draft_order):
+            side, action = draft.draft_order[draft.current_step]
+            next_action = f"{side.title()} {action}"
+
+        draft_prompt = (
+            "You are helping with a live Esports Godfather draft. The following draft "
+            "brief is authoritative app data, so use it directly. Answer the player's "
+            "question first; use a tool only when the brief lacks the needed game fact.\n\n"
+            "DRAFT BRIEF\n"
+            f"Your side: {draft.player_side.title()}\n"
+            f"Next action: {next_action}\n"
+            f"Your picks: {_format_draft_picks(draft.t1_picked)}\n"
+            f"Enemy picks: {_format_draft_picks(draft.t2_picked)}\n"
+            f"Bans: {', '.join(sorted(draft.banned)) or 'None'}\n"
+            f"Your available heroes: {_format_draft_availability(draft.t1_available)}\n"
+            f"Enemy available heroes: {_format_draft_availability(draft.t2_available)}\n"
+            f"Graph suggestion: {_format_graph_suggestion(self.draft_recommendation)}\n\n"
+            "PLAYER QUESTION\n"
+            + question.strip()
+        )
+        # Timed draft questions must stay small and independent. Reusing the
+        # general Coach history would resend every earlier draft brief and
+        # degrade local-model performance as a draft continues.
+        yield from self._stream_agent_reply(
+            [{"role": "user", "content": draft_prompt}],
+            persist_history=False,
+        )
+
+    def stream_coach_chat(self, prompt: str):
+        """Yield response text and completed coach tool calls as they stream.
 
         Args:
             message (str): The prompt for the agent.
 
         Yields:
-            Text Accessor: A returned tokens text.
+            dict: A text or tool-call event for the CLI to display.
         """
         self.coach_messages.append({"role": "user", "content": prompt.strip()})
         save_coach_messages(self.coach_messages)
 
+        yield from self._stream_agent_reply(self.coach_messages, persist_history=True)
+
+    def _stream_agent_reply(self, messages, persist_history: bool):
+        """Stream one Coach reply, optionally retaining it as normal chat history."""
         final_messages = None
 
-        # Grab the agent
         agent = self._get_or_create_coach_agent()
+        emitted_tool_calls = set()
 
         try:
             for part in agent.stream(
-                {"messages": self.coach_messages},
+                {"messages": messages},
                 stream_mode=["messages", "values"], 
                 version="v2",
             ):
                 # If a message (chunk), append the token and yield
                 if part["type"] == "messages":
                     token, _ = part["data"]
-                    if isinstance(token, AIMessageChunk) and token.text:
-                        yield token.text
+                    if isinstance(token, AIMessageChunk):
+                        # For any tool calls in this token, grab it's data
+                        for tool_call in token.tool_calls:
+                            call_id = tool_call.get("id")
+                            call_key = call_id or (
+                                tool_call["name"],
+                                json.dumps(tool_call.get("args", {}), sort_keys=True),
+                            )
+                            # If already seen, don't yield
+                            if call_key in emitted_tool_calls:
+                                continue
+
+                            # Many more chunks will probably come from this tool call, only yield the first one
+                            emitted_tool_calls.add(call_key)
+                            yield {
+                                "type": "tool_call",
+                                "name": tool_call["name"],
+                                "args": tool_call.get("args", {}),
+                            }
+
+                        if token.text:
+                            yield {"type": "text", "content": token.text}
                 # Otherwise if it's value, add it to the final messages for serialisation at the end
                 elif part["type"] == "values":
                     final_messages = part["data"]["messages"]
         finally:
-            self.coach_messages = _serialise_agent_messages(final_messages)
-            save_coach_messages(self.coach_messages)
+            if persist_history and final_messages is not None:
+                self.coach_messages = _serialise_agent_messages(final_messages)
+                save_coach_messages(self.coach_messages)
 
     def clear_coach_messages(self):
         self.coach_messages = []
@@ -495,6 +570,45 @@ class GameState:
 
 def _serialise_picks(picks):
     return {hero: sorted(positions) for hero, positions in picks.items()}
+
+
+def _format_draft_picks(picks):
+    if not picks:
+        return "None"
+    return ", ".join(
+        f"{hero} ({'/'.join(sorted(positions))})"
+        for hero, positions in sorted(picks.items())
+    )
+
+
+def _format_draft_availability(availability):
+    entries = []
+    for position in POSITIONS:
+        heroes = sorted(availability.get(position, set()))
+        if heroes:
+            entries.append(f"{position}: {', '.join(heroes)}")
+    return "; ".join(entries) or "None recorded"
+
+
+def _format_graph_suggestion(recommendation):
+    if recommendation is None:
+        return "None available"
+
+    reasons = recommendation.get("explanation", {})
+    reason_text = "; ".join(
+        f"{reason.replace('_', ' ')}: {', '.join(map(str, values))}"
+        for reason, values in reasons.items()
+        if values
+    ) or "No graph reasons recorded"
+    alternatives = ", ".join(
+        f"{candidate['hero']} ({candidate['score']:g})"
+        for candidate in recommendation.get("candidates", [])[:3]
+    )
+    return (
+        f"{recommendation['hero']} {recommendation['position']} "
+        f"(score {recommendation['score']:g}). Reasons: {reason_text}. "
+        f"Top alternatives in this position: {alternatives or 'None'}"
+    )
 
 
 def _serialise_agent_messages(messages):

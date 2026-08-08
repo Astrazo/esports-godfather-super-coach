@@ -8,3 +8,4 @@ pandas
 pydantic
 pyinstaller
 prompt_toolkit
+rich
