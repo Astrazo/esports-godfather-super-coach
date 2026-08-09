@@ -90,7 +90,7 @@ def _run_coach(session, game: GameState):
         info("Coach is thinking...")
 
         streaming_text = False
-        for event in game.stream_coach_chat(prompt):
+        for event in game.stream_coach_reply(prompt):
             if event["type"] == "tool_call":
                 if streaming_text:
                     print()

@@ -330,7 +330,7 @@ def _extract_markdown_section(markdown: str, heading: str, level: int = 1) -> st
         str: _description_
     """
     heading_marker = "#" * level
-    target = f"{heading_marker} {heading}".casefold()
+    target = f"{heading_marker} {heading}".lower()
 
     section_lines = []
     inside_section = False
@@ -338,7 +338,7 @@ def _extract_markdown_section(markdown: str, heading: str, level: int = 1) -> st
     for line in markdown.splitlines():
         stripped = line.strip()
 
-        if stripped.casefold() == target:
+        if stripped.lower() == target:
             inside_section = True
             continue
 

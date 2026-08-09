@@ -96,7 +96,6 @@ class GameState:
         confirm_hero_masteries(self.graph, self.t1_masteries, self.t2_masteries)
 
         # Setup draft data
-        self.confirmed_t2_positions = set() # so confirmed positions aren't suggested
         self.draft_order = load_draft_order()
         self.draft_state = None
         self.draft_recommendation = None
@@ -256,79 +255,68 @@ class GameState:
     # Team masteries and draft lifecycle 
     ###
     def set_masteries(self, team, position, levels):
+        # Set masteries of either t1 or t2
         masteries = self.t1_masteries if team == "t1" else self.t2_masteries
         for hero, level in levels.items():
             set_mastery(masteries, hero, position, level)
 
+        # If T1, save to json
         if team == "t1":
             save_t1_masteries(self.t1_masteries)
-        else:
-            self.confirmed_t2_positions.add(position)
-
+       
+        # Write the updated masteries to the graph
         confirm_hero_masteries(self.graph, self.t1_masteries, self.t2_masteries)
 
-        return {
-            "masteries": self.t1_masteries if team == "t1" else self.t2_masteries,
-            "confirmed_t2_positions": sorted(self.confirmed_t2_positions),
-        }
-
-    def set_draft_order(self, steps):
-        if not steps:
-            self.draft_order = None
-            save_draft_order([])
-            return self.draft_order
-
+    def set_draft_order(self, steps: list[tuple[str, str]]):
+        # Confirm steps format is correct
         for side, action in steps:
             if side not in {"blue", "red"} or action not in {"Pick", "Ban"}:
                 raise ValueError("Draft steps must use blue/red and Pick/Ban.")
 
+        # Set and save draft order if all correct
         self.draft_order = steps
         save_draft_order(self.draft_order)
-        return self.draft_order
 
     def start_draft(self, player_side):
-        if not self.draft_order:
-            raise ValueError("Configure a draft order before starting a draft.")
-        confirm_hero_masteries(self.graph, self.t1_masteries, self.t2_masteries)
+
+        # Build a draft state
         draft = build_draft_state(self.draft_order, player_side)
+
+        # Build position availability based on the current t1 and t2 masteries
         draft.t1_available = build_position_availability(self.t1_masteries)
         draft.t2_available = build_position_availability(self.t2_masteries)
+
+        # Apply draft to this object
         self.draft_state = draft
-        self.refresh_recommendation()
 
     def apply_draft_action(self, hero, position=None):
-        draft = self._require_draft()
+        """Apply either a plyer pick or player ban.
+
+        Args:
+            hero (_type_): _description_
+            position (_type_, optional): _description_. Defaults to None.
+
+        Raises:
+            ValueError: _description_
+            ValueError: _description_
+        """
+
+        # Get current draft state and relevant properties
+        draft = self.draft_state
         acting_side, action = draft.draft_order[draft.current_step]
         team = "t1" if acting_side == draft.player_side else "t2"
 
         if action == "Pick":
-            if position not in POSITIONS:
-                raise ValueError("A valid position is required for a pick.")
-            self._record_draft_pick(team, hero, position)
+            self.set_draft_pick(team, hero, position)
         else:
-            if hero not in self.graph:
-                raise ValueError(f"Unknown hero: {hero}")
-            draft.t1_picked.pop(hero, None)
-            draft.t2_picked.pop(hero, None)
-            draft.banned.add(hero)
-            self._rebuild_draft_availability()
+            self.set_draft_ban(hero)
 
+        # Move draft step forward and refresh recomendation
         draft.current_step += 1
         self.refresh_recommendation()
 
-    def apply_t2_knowledge(self):
-        draft = self._require_draft()
-        confirm_hero_masteries(self.graph, self.t1_masteries, self.t2_masteries)
-        latest_available = build_position_availability(self.t2_masteries)
-        unavailable = set(draft.t1_picked) | set(draft.t2_picked) | draft.banned
-
-        for position in POSITIONS:
-            draft.t2_available[position] = latest_available[position] - unavailable
-        self.refresh_recommendation()
-
     def set_draft_pick(self, team, hero, position):
-        """Set the current confirmed hero for a team position, replacing stale data."""
-        draft = self._require_draft()
+        """Direction functions for setting a draft pick."""
         if team not in {"t1", "t2"}:
             raise ValueError("Team must be t1 or t2.")
         if position not in POSITIONS:
@@ -341,67 +329,67 @@ class GameState:
             raise ValueError(f"{hero} cannot play {position}.")
 
         self._record_draft_pick(team, hero, position)
-        self.refresh_recommendation()
+    
+        
+    def set_draft_ban(self, hero):
+        """Validate and toggle a ban without advancing the draft."""
+        if hero not in self.graph:
+            raise ValueError(f"Unknown hero: {hero}")
+        return self._record_draft_ban(hero)
 
     def _record_draft_pick(self, team, hero, position):
-        """Replace one team's lane assignment and rebuild the remaining pools."""
-        draft = self._require_draft()
-        if hero not in self.graph:
-            raise ValueError(f"Unknown hero: {hero}")
-        if position not in self.graph.nodes[hero]["tiers"]:
-            raise ValueError(f"{hero} cannot play {position}.")
+            """Replace one team's lane assignment and rebuild the remaining pools."""
+            # Get draft and ensure valid data 
+            draft = self.draft_state
+    
+            # Update picks
+            team_picks = draft.t1_picked if team == "t1" else draft.t2_picked
+            other_picks = draft.t2_picked if team == "t1" else draft.t1_picked
+    
+            # A hero can only appear once across both teams, and a lane can only
+            # contain one hero for the team. The newest entered value is authoritative.
+            team_picks.pop(hero, None)
+            other_picks.pop(hero, None)
+            for picked_hero, positions in list(team_picks.items()):
+                if position in positions:
+                    del team_picks[picked_hero]
+    
+            team_picks[hero] = {position}
+            draft.banned.discard(hero) # if this hero was previously banned, discard it
+            self._rebuild_draft_availability()
 
-        team_picks = draft.t1_picked if team == "t1" else draft.t2_picked
-        other_picks = draft.t2_picked if team == "t1" else draft.t1_picked
+    def _record_draft_ban(self, hero):
+        """Toggle a ban and return whether the hero is now banned."""
+        draft = self.draft_state
 
-        # A hero can only appear once across both teams, and a lane can only
-        # contain one hero for the team. The newest entered value is authoritative.
-        team_picks.pop(hero, None)
-        other_picks.pop(hero, None)
-        for picked_hero, positions in list(team_picks.items()):
-            if position in positions:
-                del team_picks[picked_hero]
-
-        team_picks[hero] = {position}
-        draft.banned.discard(hero)
-        self._rebuild_draft_availability()
-
-    def set_draft_ban(self, hero):
-        """Record a currently correct ban, replacing any conflicting pick."""
-        draft = self._require_draft()
-        if hero not in self.graph:
-            raise ValueError(f"Unknown hero: {hero}")
+        if hero in draft.banned:
+            draft.banned.remove(hero)
+            self._rebuild_draft_availability()
+            return False
 
         draft.t1_picked.pop(hero, None)
         draft.t2_picked.pop(hero, None)
         draft.banned.add(hero)
         self._rebuild_draft_availability()
-        self.refresh_recommendation()
-
-    def remove_draft_ban(self, hero):
-        """Remove a ban when it was entered incorrectly."""
-        draft = self._require_draft()
-        draft.banned.discard(hero)
-        self._rebuild_draft_availability()
-        self.refresh_recommendation()
+        return True
 
     def _rebuild_draft_availability(self):
-        """Recreate remaining pools from masteries and the current draft truth."""
-        draft = self._require_draft()
-        draft.t1_available = build_position_availability(self.t1_masteries)
-        draft.t2_available = build_position_availability(self.t2_masteries)
-        unavailable = set(draft.t1_picked) | set(draft.t2_picked) | draft.banned
-
-        for available in (draft.t1_available, draft.t2_available):
-            for pool in available.values():
-                pool.difference_update(unavailable)
-
-        for positions in draft.t1_picked.values():
-            for position in positions:
-                draft.t1_available[position].clear()
-        for positions in draft.t2_picked.values():
-            for position in positions:
-                draft.t2_available[position].clear()
+            """Recreate remaining pools from masteries and the current draft truth."""
+            draft = self.draft_state
+            draft.t1_available = build_position_availability(self.t1_masteries)
+            draft.t2_available = build_position_availability(self.t2_masteries)
+            unavailable = set(draft.t1_picked) | set(draft.t2_picked) | draft.banned
+    
+            for available in (draft.t1_available, draft.t2_available):
+                for pool in available.values():
+                    pool.difference_update(unavailable)
+    
+            for positions in draft.t1_picked.values():
+                for position in positions:
+                    draft.t1_available[position].clear()
+            for positions in draft.t2_picked.values():
+                for position in positions:
+                    draft.t2_available[position].clear()
 
     def end_draft(self):
         self.draft_state = None
@@ -466,51 +454,28 @@ class GameState:
 
     # Coach conversation
 
-    def stream_draft_advice(self, question: str):
-        """Ask the coach about the live draft using a concise, readable briefing."""
-        draft = self._require_draft()
+    def stream_coach_reply(self, prompt: str, during_draft: bool = False):
+        """Stream a saved Coach chat reply or an independent draft reply."""
+        if during_draft:
+            messages = [{"role": "user", "content": self._build_draft_prompt(prompt)}]
+            yield from self._stream_agent_reply(messages, persist_history=False)
+        else:
+            self.coach_messages.append({"role": "user", "content": prompt.strip()})
+            save_coach_messages(self.coach_messages)
+            yield from self._stream_agent_reply(self.coach_messages, persist_history=True)
+
+    def _build_draft_prompt(self, question: str):
+        """Build the temporary context for a question asked during a draft."""
+        draft = self.draft_state
         next_action = "Draft complete"
         if draft.current_step < len(draft.draft_order):
             side, action = draft.draft_order[draft.current_step]
             next_action = f"{side.title()} {action}"
-
-        draft_prompt = (
-            "You are helping with a live Esports Godfather draft. The following draft "
-            "brief is authoritative app data, so use it directly. Answer the player's "
-            "question first; use a tool only when the brief lacks the needed game fact.\n\n"
-            "DRAFT BRIEF\n"
-            f"Your side: {draft.player_side.title()}\n"
-            f"Next action: {next_action}\n"
-            f"Your picks: {_format_draft_picks(draft.t1_picked)}\n"
-            f"Enemy picks: {_format_draft_picks(draft.t2_picked)}\n"
-            f"Bans: {', '.join(sorted(draft.banned)) or 'None'}\n"
-            f"Your available heroes: {_format_draft_availability(draft.t1_available)}\n"
-            f"Enemy available heroes: {_format_draft_availability(draft.t2_available)}\n"
-            f"Graph suggestion: {_format_graph_suggestion(self.draft_recommendation)}\n\n"
-            "PLAYER QUESTION\n"
-            + question.strip()
+        return (
+            f"Current Graph Suggestion: {_format_graph_suggestion(self.draft_recommendation)}\n"
+            f"Current Action: {next_action}\n\n"
+            f"Current Player Question: {question.strip()}"
         )
-        # Timed draft questions must stay small and independent. Reusing the
-        # general Coach history would resend every earlier draft brief and
-        # degrade local-model performance as a draft continues.
-        yield from self._stream_agent_reply(
-            [{"role": "user", "content": draft_prompt}],
-            persist_history=False,
-        )
-
-    def stream_coach_chat(self, prompt: str):
-        """Yield response text and completed coach tool calls as they stream.
-
-        Args:
-            message (str): The prompt for the agent.
-
-        Yields:
-            dict: A text or tool-call event for the CLI to display.
-        """
-        self.coach_messages.append({"role": "user", "content": prompt.strip()})
-        save_coach_messages(self.coach_messages)
-
-        yield from self._stream_agent_reply(self.coach_messages, persist_history=True)
 
     def _stream_agent_reply(self, messages, persist_history: bool):
         """Stream one Coach reply, optionally retaining it as normal chat history."""
@@ -562,35 +527,15 @@ class GameState:
         self.coach_messages = []
         save_coach_messages([])
 
-    def _require_draft(self):
-        if self.draft_state is None:
-            raise ValueError("No draft is currently active.")
-        return self.draft_state
-
-
-def _serialise_picks(picks):
-    return {hero: sorted(positions) for hero, positions in picks.items()}
-
-
-def _format_draft_picks(picks):
-    if not picks:
-        return "None"
-    return ", ".join(
-        f"{hero} ({'/'.join(sorted(positions))})"
-        for hero, positions in sorted(picks.items())
-    )
-
-
-def _format_draft_availability(availability):
-    entries = []
-    for position in POSITIONS:
-        heroes = sorted(availability.get(position, set()))
-        if heroes:
-            entries.append(f"{position}: {', '.join(heroes)}")
-    return "; ".join(entries) or "None recorded"
-
-
 def _format_graph_suggestion(recommendation):
+    """Format graph suggestion to be fed to coach if a question is asked regarding it.
+
+    Args:
+        recommendation (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     if recommendation is None:
         return "None available"
 
@@ -602,40 +547,22 @@ def _format_graph_suggestion(recommendation):
     ) or "No graph reasons recorded"
     alternatives = ", ".join(
         f"{candidate['hero']} ({candidate['score']:g})"
-        for candidate in recommendation.get("candidates", [])[:3]
+        for candidate in recommendation.get("candidates", [])[1:4] # don't show the top one(that's thre recomendation)
     )
-    return (
+    suggestion_text = (
         f"{recommendation['hero']} {recommendation['position']} "
         f"(score {recommendation['score']:g}). Reasons: {reason_text}. "
         f"Top alternatives in this position: {alternatives or 'None'}"
     )
+    return suggestion_text
 
 
 def _serialise_agent_messages(messages):
+    """Keep completed chat exchanges without resending raw tool traffic."""
     outputs = []
     for message in messages:
         if message.type == "human":
             outputs.append({"role": "human", "content": str(message.text)})
-        elif message.type == "ai":
-            output = {"role": "ai", "content": str(message.text)}
-            if message.tool_calls:
-                output["tool_calls"] = [
-                    {
-                        "id": tool_call["id"],
-                        "name": tool_call["name"],
-                        "args": tool_call["args"],
-                        "type": "tool_call",
-                    }
-                    for tool_call in message.tool_calls
-                ]
-            outputs.append(output)
-        elif message.type == "tool":
-            outputs.append(
-                {
-                    "role": "tool",
-                    "content": str(message.text),
-                    "tool_call_id": message.tool_call_id,
-                    "name": message.name,
-                }
-            )
+        elif message.type == "ai" and not message.tool_calls and message.text:
+            outputs.append({"role": "ai", "content": str(message.text)})
     return outputs

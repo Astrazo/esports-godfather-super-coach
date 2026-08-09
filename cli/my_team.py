@@ -90,8 +90,8 @@ def _parse_hero_mastery(entry: str, hero_names):
     if len(parts) != 2:
         return None, None, "Enter a hero followed by a mastery level, for example: Babe 3."
 
-    hero_lookup = {hero.casefold(): hero for hero in hero_names}
-    hero = hero_lookup.get(parts[0].casefold())
+    hero_lookup = {hero.lower(): hero for hero in hero_names}
+    hero = hero_lookup.get(parts[0].lower())
     if hero is None:
         return None, None, "Choose a hero from the completion list."
     if not parts[1].isdigit() or not 0 <= int(parts[1]) <= 7:

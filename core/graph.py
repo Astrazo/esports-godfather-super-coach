@@ -56,6 +56,13 @@ def build_master_graph(data: GlobalData) -> nx.MultiDiGraph:
 
 # Applies the hero masteries to the graph
 def confirm_hero_masteries(G: nx.MultiDiGraph, t1_masteries: dict[str, dict[str, int]], t2_masteries: dict[str, dict[str, int]]) -> None:
+    """Apply hero masteries to the master graph
+
+    Args:
+        G (nx.MultiDiGraph): _description_
+        t1_masteries (dict[str, dict[str, int]]): _description_
+        t2_masteries (dict[str, dict[str, int]]): _description_
+    """
     _clear_hero_masteries(G)
     nx.set_node_attributes(G, t1_masteries, name="t1_masteries")
     nx.set_node_attributes(G, t2_masteries, name="t2_masteries")

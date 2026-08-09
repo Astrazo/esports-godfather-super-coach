@@ -56,7 +56,7 @@ def _collect_t2_masteries(session: PromptSession, game: GameState):
             "Enemy mastery (/start blue)> ",
             completer=hero_completer,
         ).strip()
-        command = entry.casefold()
+        command = entry.lower()
 
         if command == "/cancel":
             info("Draft setup cancelled.")
@@ -65,29 +65,40 @@ def _collect_t2_masteries(session: PromptSession, game: GameState):
             _show_t2_masteries(t2_levels)
             continue
 
-        # If the player has picked a side, begin the draft
-        player_side = _parse_start_command(command)
-        if player_side:
+        # If the player has picked a side with /start side, begin the draft
+        player_side_confirmed = _parse_start_command(command)
+        if player_side_confirmed:
 
             # Set masteries
             for position, levels in t2_levels.items():
                 game.set_masteries("t2", position, levels)
 
             # Start draft
-            game.start_draft(player_side)
-            success(f"Draft started. You are playing {player_side.title()} side.")
+            game.start_draft(player_side_confirmed)
+            success(f"Draft started. You are playing {player_side_confirmed.title()} side.")
+
+            # Build the first recomendation
+            game.refresh_recommendation()
+
+            # Begin the draft loop
             _run_draft_loop(session, game)
             return
+
+        # If the command started with /start but wasn't parsed correctly, show error.
         if command.startswith("/start"):
             error("Use /start blue or /start red.")
             continue
 
+        # Parse the entries for t2 masteries
         updates, parse_errors = _parse_t2_entries(entry, game)
+
+        # Alert if any errors found
         if parse_errors:
             for parse_error in parse_errors:
                 error(parse_error)
             continue
 
+        # If all good, assign mastries to t2_levels to be assigned once /start is called
         for hero, level, position in updates:
             t2_levels[position][hero] = level
         success(f"Added {len(updates)} enemy mastery entr{'y' if len(updates) == 1 else 'ies'}.")
@@ -101,23 +112,35 @@ def _parse_start_command(command: str):
 
 def _parse_t2_entries(entry: str, game: GameState):
     """Parse one or more 'Hero Mastery Position' records before applying any."""
+
+    # Split into seperate commands
     records = [record.strip() for record in entry.replace("\n", ";").split(";") if record.strip()]
     if not records:
         return [], ["Enter a hero, mastery, and position; for example: Wolfgang 7 Mid."]
 
-    hero_lookup = {hero.casefold(): hero for hero in game.data.hero_names}
-    position_lookup = {position.casefold(): position for position in POSITIONS}
+    # Build a hero and position lookup to handle different cases and membership correctness 
+    # (wolfgang => Wolfgang, notahero => Can't find error)
+    hero_lookup = {hero.lower(): hero for hero in game.data.hero_names}
+    position_lookup = {position.lower(): position for position in POSITIONS}
+
+    # List updates and errors
     updates = []
     errors = []
 
     for record in records:
+        # Split this record into the 3 sections (hero, proficieny, lane)
         parts = record.rsplit(maxsplit=2)
+
+        # Confirm 3 parts exist
         if len(parts) != 3:
             errors.append(f"Invalid entry '{record}'. Use: Hero Mastery Position.")
             continue
 
-        hero = hero_lookup.get(parts[0].casefold())
-        position = position_lookup.get(parts[2].casefold())
+        # Extract info from this record in it's required form from the lookups
+        hero = hero_lookup.get(parts[0].lower())
+        position = position_lookup.get(parts[2].lower())
+
+        # Confirm data is correct
         if hero is None:
             errors.append(f"Unknown hero in '{record}'. Use Tab to complete hero names.")
             continue
@@ -131,6 +154,7 @@ def _parse_t2_entries(entry: str, game: GameState):
             errors.append(f"{hero} cannot play {position}.")
             continue
 
+        # Update if data is correct
         updates.append((hero, int(parts[1]), position))
 
     return updates, errors
@@ -146,35 +170,32 @@ def _show_t2_masteries(t2_levels):
 def _run_draft_loop(session: PromptSession, game: GameState):
     """Record each draft action and show advice when it is the player's turn."""
     while game.draft_state.current_step < len(game.draft_state.draft_order):
+
+        # Grab draft state and the acting sides action
         draft = game.draft_state
         acting_side, action = draft.draft_order[draft.current_step]
 
         heading(f"Draft — {acting_side.title()} {action}")
         draft_summary(draft)
+
+        # If the acting side is the player's side, then print the current recomendation and the coach hint
         if acting_side == draft.player_side:
             _print_recommendation(game.draft_recommendation, action)
         info("Ask the Coach at any time: /coach Your question")
 
-        if action == "Pick":
-            with patch_stdout():
-                pick = _prompt_draft_pick(session, game)
-            if pick is None:
-                game.end_draft()
-                info("Draft ended.")
-                return
+        with patch_stdout():
+            draft_action = _prompt_draft_action(session, game, action)
 
-            hero, position = pick
-            game.apply_draft_action(hero, position)
-        else:
-            with patch_stdout():
-                hero = _prompt_draft_hero(session, game, action)
-            if hero is None:
-                game.end_draft()
-                info("Draft ended.")
-                return
+        if draft_action is None: # /end returns None
+            game.end_draft()
+            info("Draft ended.")
+            return
 
-            game.apply_draft_action(hero)
+        # Apply draft action with hero and position
+        hero, position = draft_action
+        game.apply_draft_action(hero, position)
 
+    # When we've completed enough actions based on the set draft order, run review
     success("Draft actions complete. Review the final teams before ending.")
     _run_draft_review(session, game)
 
@@ -183,47 +204,25 @@ def _print_recommendation(recommendation, action: str):
     show_recommendation(recommendation, action)
 
 
-def _prompt_draft_hero(session: PromptSession, game: GameState, action: str):
+def _prompt_draft_action(session: PromptSession, game: GameState, action: str):
+    """Read and validate the hero, plus a position when the action is a pick."""
     heroes = sorted(game.data.hero_names)
-    hero_lookup = {hero.casefold(): hero for hero in heroes}
+    hero_lookup = {hero.lower(): hero for hero in heroes}
+    position_lookup = {position.lower(): position for position in POSITIONS}
     hero_completer = WordCompleter(heroes, ignore_case=True, sentence=True)
 
     while True:
-        hero_entry = session.prompt(
-            f"{action} hero — type a name, then Tab (/end)> ",
-            completer=hero_completer,
-        ).strip()
-
-        command = hero_entry.casefold()
-        if command == "/end":
-            return None
-        if command == "/coach":
-            error("Use /coach followed by a question.")
-            continue
-        if command.startswith("/coach "):
-            _ask_draft_coach(game, hero_entry.split(maxsplit=1)[1])
-            continue
-        hero = hero_lookup.get(hero_entry.casefold())
-        if hero:
-            return hero
-
-        error("Unknown hero. Type part of a hero name, press Tab to complete it, then press Enter.")
-
-
-def _prompt_draft_pick(session: PromptSession, game: GameState):
-    """Read a pick as one '<hero> <position>' entry."""
-    heroes = sorted(game.data.hero_names)
-    hero_lookup = {hero.casefold(): hero for hero in heroes}
-    position_lookup = {position.casefold(): position for position in POSITIONS}
-    hero_completer = WordCompleter(heroes, ignore_case=True, sentence=True)
-
-    while True:
+        prompt = (
+            "Pick Hero — Hero Name | Position (/end)> "
+            if action == "Pick"
+            else f"Ban hero — Hero Name (/end)> "
+        )
         entry = session.prompt(
-            "Pick — Hero Position, then Enter (/end)> ",
+            prompt,
             completer=hero_completer,
         ).strip()
 
-        command = entry.casefold()
+        command = entry.lower()
         if command == "/end":
             return None
         if command == "/coach":
@@ -232,20 +231,25 @@ def _prompt_draft_pick(session: PromptSession, game: GameState):
         if command.startswith("/coach "):
             _ask_draft_coach(game, entry.split(maxsplit=1)[1])
             continue
-        parts = entry.rsplit(maxsplit=1)
-        if len(parts) != 2:
-            error("Use Hero Position, for example: Bariel Bot or Zealot Jungler.")
-            continue
 
-        hero = hero_lookup.get(parts[0].casefold())
-        position = position_lookup.get(parts[1].casefold())
+        hero_entry = entry
+        position = None
+        if action == "Pick":
+            parts = entry.rsplit(maxsplit=1)
+            if len(parts) != 2:
+                error("Use Hero Position, for example: Bariel Bot or Zealot Jungler.")
+                continue
+            hero_entry, position_entry = parts
+            position = position_lookup.get(position_entry.lower())
+            if position is None:
+                error("Use Top, Jungler, Mid, Bot, or Support.")
+                continue
+
+        hero = hero_lookup.get(hero_entry.lower())
         if hero is None:
             error("Unknown hero. Type part of a hero name, then press Tab to complete it.")
             continue
-        if position is None:
-            error("Use Top, Jungler, Mid, Bot, or Support.")
-            continue
-        if position not in game.graph.nodes[hero]["tiers"]:
+        if position is not None and position not in game.graph.nodes[hero]["tiers"]:
             error(f"{hero} cannot play {position}.")
             continue
 
@@ -261,11 +265,11 @@ def _run_draft_review(session: PromptSession, game: GameState):
         heading("Draft Review")
         draft_summary(game.draft_state)
         entry = session.prompt("Review> ").strip()
-        command = entry.casefold()
+        command = entry.lower()
 
         if command == "/end":
             game.end_draft()
-            success("Draft ended.")
+            success("Draft complete. Good luck!")
             return
         if command == "/show":
             continue
@@ -273,10 +277,10 @@ def _run_draft_review(session: PromptSession, game: GameState):
             _apply_pick_correction(entry, game)
             continue
         if command.startswith("/ban "):
-            _apply_ban_correction(entry.split(maxsplit=1)[1], game, add=True)
+            _apply_ban_correction(entry.split(maxsplit=1)[1], game)
             continue
         if command.startswith("/unban "):
-            _apply_ban_correction(entry.split(maxsplit=1)[1], game, add=False)
+            _apply_ban_correction(entry.split(maxsplit=1)[1], game)
             continue
         if command == "/coach":
             error("Use /coach followed by a question.")
@@ -295,7 +299,7 @@ def _run_draft_review(session: PromptSession, game: GameState):
 def _apply_pick_correction(entry: str, game: GameState):
     """Parse '/set mine|enemy Hero Position' and make it the current value."""
     parts = entry.split(maxsplit=2)
-    if len(parts) != 3 or parts[1].casefold() not in {"mine", "enemy"}:
+    if len(parts) != 3 or parts[1].lower() not in {"mine", "enemy"}:
         error("Use /set mine Hero Position or /set enemy Hero Position.")
         return
 
@@ -310,7 +314,7 @@ def _apply_pick_correction(entry: str, game: GameState):
         return
 
     try:
-        team = "t1" if parts[1].casefold() == "mine" else "t2"
+        team = "t1" if parts[1].lower() == "mine" else "t2"
         game.set_draft_pick(team, hero, position)
     except ValueError as exception:
         error(str(exception))
@@ -318,28 +322,27 @@ def _apply_pick_correction(entry: str, game: GameState):
     success(f"Set {'your' if team == 't1' else 'enemy'} {position} pick to {hero}.")
 
 
-def _apply_ban_correction(hero_entry: str, game: GameState, add: bool):
+def _apply_ban_correction(hero_entry: str, game: GameState):
     hero = _find_hero(hero_entry, game)
     if hero is None:
         return
 
-    if add:
-        game.set_draft_ban(hero)
+    is_banned = game.set_draft_ban(hero)
+    if is_banned:
         success(f"Set {hero} as banned.")
     else:
-        game.remove_draft_ban(hero)
         success(f"Removed ban for {hero}.")
 
 
 def _find_hero(hero_entry: str, game: GameState):
-    hero = {name.casefold(): name for name in game.data.hero_names}.get(hero_entry.casefold())
+    hero = {name.lower(): name for name in game.data.hero_names}.get(hero_entry.lower())
     if hero is None:
         error("Unknown hero. Use the hero's full name.")
     return hero
 
 
 def _find_position(position_entry: str):
-    position = {name.casefold(): name for name in POSITIONS}.get(position_entry.casefold())
+    position = {name.lower(): name for name in POSITIONS}.get(position_entry.lower())
     if position is None:
         error("Unknown position. Use Top, Jungler, Mid, Bot, or Support.")
     return position
@@ -354,7 +357,7 @@ def _ask_draft_coach(game: GameState, prompt: str):
     info("Coach is thinking...")
     printed_text = False
     received_text = False
-    for event in game.stream_draft_advice(prompt):
+    for event in game.stream_coach_reply(prompt, during_draft=True):
         if event["type"] == "tool_call":
             if printed_text:
                 print()

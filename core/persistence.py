@@ -45,6 +45,11 @@ def load_t1_masteries(default_masteries):
 
 
 def save_t1_masteries(masteries):
+    """Write T1 Masteries to JSON file
+
+    Args:
+        masteries (_type_): _description_
+    """
     _write_json(T1_MASTERIES_FILE, masteries)
 
 
@@ -83,6 +88,11 @@ def load_draft_order():
     return draft_order
 
 def save_draft_order(draft_order):
+    """Write draft order to JSON file.
+
+    Args:
+        draft_order (_type_): _description_
+    """
     _write_json(DRAFT_ORDER_FILE, draft_order)
 
 def load_model_settings():
