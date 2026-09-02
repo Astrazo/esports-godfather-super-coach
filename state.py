@@ -395,7 +395,6 @@ class GameState:
         self.draft_state = None
         self.draft_recommendation = None
         self.t2_masteries = create_default_masteries(self.graph)
-        self.confirmed_t2_positions.clear()
         confirm_hero_masteries(self.graph, self.t1_masteries, self.t2_masteries)
 
     def refresh_recommendation(self):
